@@ -97,17 +97,20 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+   
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 #endif
+    /*
+      NO asignar variables debajo de unsigned magic, porque
 
-    /*NOTA: no asignar variables debajo de unsigned magic, porque
-
-    puede alterar el la forma en que el sistema se comporta/
+      puede alterar el la forma en que el sistema se comporta*/
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+    
+
   };
 
 /* If false (default), use round-robin scheduler.
@@ -120,6 +123,15 @@ void thread_start (void);
 
 void thread_tick (void);
 void thread_print_stats (void);
+
+/* Prototipo necesario para reimplementar el metodo timer_sleep del archivo timer.c
+  para solucionar el busy waiting inicial
+
+  agregarListaHilosEspera(ticks), lo que hace es bloquear al hilo actual, insertarlo en una lista 
+  de hilos en espera de cumplir el tiempo que deben estar dormidos.
+*/
+void agregarListaHilosEspera(int64_t ticks);
+
 
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);

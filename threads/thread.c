@@ -20,17 +20,16 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
-/* List of processes in THREAD_READY state, that is, processes
-   that are ready to run but not actually running. */
-static struct list ready_list;
-
-/* 
-  
-  Lista de los hilos o threads que se encuentran todavia esperando a cumplir el tiempo que deben 
-  permanecer dormidos.
+/*
+  Lista de los hilos o threads que se encuentran todavia esperando a cumplir el tiempo que deben permanecer dormidos.
 
 */
 static struct list threadsEsperando;
+
+
+/* List of processes in THREAD_READY state, that is, processes
+   that are ready to run but not actually running. */
+static struct list ready_list;
 
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
@@ -153,6 +152,9 @@ thread_tick (void)
     intr_yield_on_return ();
 }
 
+
+
+
 /* Prints thread statistics. */
 void
 thread_print_stats (void) 
@@ -234,6 +236,15 @@ thread_block (void)
   schedule ();
 }
 
+
+
+void agregarListaHilosEspera(int64_t ticks){
+  // No implementado todavia...
+  
+}
+
+
+
 /* Transitions a blocked thread T to the ready-to-run state.
    This is an error if T is not blocked.  (Use thread_yield() to
    make the running thread ready.)
@@ -255,6 +266,9 @@ thread_unblock (struct thread *t)
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
+
+
+
 
 /* Returns the name of the running thread. */
 const char *
