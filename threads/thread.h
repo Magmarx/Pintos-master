@@ -90,9 +90,9 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
 
-    // Declaracion de variable
-    //uint64_t  
-
+    // Representa el tiempo que un thread permanece dormido
+    uint64_t  tiempoThreadDormido;
+    
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */

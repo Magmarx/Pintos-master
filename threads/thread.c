@@ -24,6 +24,14 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
+/* 
+  
+  Lista de los hilos o threads que se encuentran todavia esperando a cumplir el tiempo que deben 
+  permanecer dormidos.
+
+*/
+static struct list threadsEsperando;
+
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
@@ -92,6 +100,12 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+
+
+  /*
+    Se inicializa la lista (threadsEsperando) de los hilos que se encuentran en espera a cumplir su tiempo que deben permanecer dormidos.
+  */
+  list_init(&threadsEsperando);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
