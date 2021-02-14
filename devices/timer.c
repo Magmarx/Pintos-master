@@ -1,4 +1,10 @@
+
+/* 
+  Prototipos declarados en el archivo devices/timer.h que se implementan
+  en timer.c
+*/
 #include "devices/timer.h"
+
 #include <debug.h>
 #include <inttypes.h>
 #include <round.h>
@@ -89,11 +95,17 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+  /*
+  CODIGO original dado: 
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
   while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+    thread_yield ();*/
+
+  
+
+
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -166,7 +178,12 @@ timer_print_stats (void)
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
-/* Timer interrupt handler. */
+/* 
+  timer_interrupt es el reloj de pintos. Al ser invocado la variable ticks
+  se incrementa.
+
+  Timer interrupt handler. 
+*/
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {

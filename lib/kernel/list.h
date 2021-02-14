@@ -1,6 +1,9 @@
 #ifndef __LIB_KERNEL_LIST_H
 #define __LIB_KERNEL_LIST_H
 
+/*Archivo necesario para comprender la estructura, funcionamiento y manejo 
+de la estructura lista*/
+
 /* Doubly linked list.
 
    This implementation of a doubly linked list does not require

@@ -1,6 +1,9 @@
 #include "list.h"
 #include "../debug.h"
 
+/*Archivo necesario para comprender la estructura, funcionamiento y manejo 
+de la estructura lista*/
+
 /* Our doubly linked lists have two header elements: the "head"
    just before the first element and the "tail" just after the
    last element.  The `prev' link of the front header is null, as

@@ -90,6 +90,10 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
 
+    // Declaracion de variable
+    //uint64_t  
+
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
@@ -97,6 +101,10 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 #endif
+
+    /*NOTA: no asignar variables debajo de unsigned magic, porque
+
+    puede alterar el la forma en que el sistema se comporta/
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
