@@ -179,6 +179,8 @@ lock_init (struct lock *lock)
 
   lock->holder = NULL;
   sema_init (&lock->semaphore, 1);
+
+  lock->priority_lock = FAKE_PRIORITY;
 }
 
 /* Acquires LOCK, sleeping until it becomes available if
@@ -228,11 +230,54 @@ lock_try_acquire (struct lock *lock)
 void
 lock_release (struct lock *lock) 
 {
+  // Original code
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
+  struct thread *curr_thread;
+  enum intr_level old_level;
+  curr_thread = thread_current();
+  old_level = intr_disable();
+
+  // original code
   lock->holder = NULL;
   sema_up (&lock->semaphore);
+
+  list_remove(&lock->list_element_lock);
+  lock->priority_lock = FAKE_PRIORITY;
+
+  // Make the current thread hold the lock
+  if (list_empty(&curr_thread->locks)) {
+    curr_thread->is_donated = false;
+    thread_set_priority(curr_thread->old_priority);
+  } else {
+    // Multi Donation
+
+    /* 
+    * Locks are sorted by their priority in descending order
+	  */
+    struct lock *first_lock;
+    first_lock = list_entry(list_front (&curr_thread->locks), struct lock, list_element_lock);	  
+	  if (first_lock->priority_lock != FAKE_PRIORITY) {
+      /*
+      * If at least one thread is waiting in the list
+      * we will donate the priority lock to the current
+      * thread.
+      */
+	    set_thread_priority(curr_thread, first_lock->priority_lock, true);
+	  } else {
+      /*
+      If a lock semaphore list is empty it means we have no
+      more threads acquiring the current lock, then we have
+      to reset the current priority to the original priority
+      */
+      thread_set_priority(curr_thread->old_priority);
+    }
+	}
+	
+  intr_set_level (old_level);
+
+
 }
 
 /* Returns true if the current thread holds LOCK, false
