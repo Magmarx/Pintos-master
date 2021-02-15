@@ -335,7 +335,8 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+  struct thread *curr_thread = thread_current ();	
+	set_thread_priority(curr_thread, new_priority, false);
 }
 
 /* Returns the current thread's priority. */
@@ -541,6 +542,88 @@ thread_schedule_tail (struct thread *prev)
       palloc_free_page (prev);
     }
 }
+
+// Begining custom functions
+
+bool compare_priority(struct list_elem *first_thread,struct list_elem *second_thread,void *AUX UNUSED){
+	struct thread *thread_1=list_entry(first_thread,struct thread,elem);
+	struct thread *thread_2=list_entry(second_thread,struct thread,elem);
+	return thread_1->priority>thread_2->priority;
+}
+
+void thread_yield_current (struct thread *curr_thread) {
+	ASSERT (is_thread (curr_thread));
+	enum intr_level old_level;
+	
+	ASSERT (!intr_context ());
+	
+	old_level = intr_disable ();
+	if (curr_thread != idle_thread) {
+    /*
+    * Make sure that the ready_list is ordered so the thread
+    * with the highest priority run's first
+    */
+	  list_insert_ordered(&ready_list, &curr_thread->elem, compare_priority, NULL);
+	}
+}
+
+void set_thread_priority (struct thread *curr_thread, int new_prior, bool is_donated) {
+
+  enum intr_level old_level = intr_disable();
+
+  ASSERT (new_prior >= PRI_MIN && new_prior <= PRI_MAX);
+  ASSERT (is_thread (curr_thread));
+
+   /* 
+   *  
+   if this operation is a not donatation
+    *   if the thread has been donated and the new priority is less 
+    *   or equal to the donated priority, we should delay the process
+    *   by preserve it in priority_original.
+    * otherwise, just do the donation, set priority to the donated
+    * priority, and mark the thread as a donated one.
+    */ 
+   if (!is_donated) {
+       if (curr_thread->is_donated && new_prior <= curr_thread->priority) {
+          // Here we delay the process so we can preserve it's original priority
+          curr_thread->old_priority = new_prior; 
+        } else {
+          /* 
+          * Here we set the new priority
+          */
+          curr_thread->priority = new_prior;
+          curr_thread->old_priority = new_prior;
+        }
+    } else {
+       /*
+       * Here we do the priority donation and
+       * mark the thread as a donating one.
+       */
+        curr_thread->priority = new_prior;
+        curr_thread->is_donated = true;
+    }
+
+    if (curr_thread->status == THREAD_READY) {
+      /*
+      * If the thread finished it's process
+      * then we just move it to the ready_list
+      * to keep the list in order
+      */
+      list_remove(&curr_thread->elem);
+      list_insert_ordered(&ready_list, &curr_thread->elem, compare_priority, NULL);
+    } else if ((list_entry(list_begin(&ready_list), struct thread, elem)->priority > curr_thread->priority) && curr_thread->status == THREAD_READY) {
+      /*
+      * If the thead with the highest priority in the list it's
+      * larger than the current thread priority then we make the
+      * current thread yield the cpu to the other thread
+      */
+      thread_yield_current(curr_thread);
+    }
+
+  intr_set_level (old_level);
+}
+
+// Finished custom functions
 
 /* Schedules a new process.  At entry, interrupts must be off and
    the running process's state must have been changed from
