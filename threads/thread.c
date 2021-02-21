@@ -45,12 +45,6 @@ static struct thread *initial_thread;
 static struct lock tid_lock;
 
 
-/*interrup.c, necesario para deshabilitar interrupciones*/
-enum intr_level antiguoNivel;
-
-struct thread *hiloActual;
-
-
 /* Stack frame for kernel_thread(). */
 struct kernel_thread_frame 
   {
@@ -246,18 +240,31 @@ thread_block (void)
 
 
 void agregarListaHilosEspera(int64_t ticks){
-
+  /*interrup.c, necesario para deshabilitar interrupciones*/
+  enum intr_level antiguoNivel;
 
   /* Archivo threads/interrupt.c Disables interrupts and returns the previous interrupt status. */
   antiguoNivel = intr_disable();
 
   //retorna un puntero al hilo actual
-  hiloActual = thread_current();
+  struct thread *hiloActual = thread_current();
 
+
+  /* remueva el thread que se enuentra en estado ready list del struct 
+    list threadsEsperando. Realiza un cambio de estado, a thread blocked
+  */
 
   //timer_ticks() Returns the number of timer ticks since the OS booted.
-
+  // tiempoThreadDormido de thread.h
   hiloActual->tiempoThreadDormido = timer_ticks()+ticks;
+
+  list_push_back(&threadsEsperando,&hiloActual->elem);
+
+  // bloquea al thread actual en ejecucion
+  thread_block();
+
+  // habilitar interrupciones
+  intr_set_level(antiguoNivel);
 
 }
 
