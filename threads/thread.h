@@ -133,6 +133,11 @@ void thread_print_stats (void);
 void agregarListaHilosEspera(int64_t ticks);
 
 
+/*prototipo que desbloquea los hilos que estan durmiendo luego de cierto tiempo. Implementacion en thread.c*/
+void eliminarHiloDormido(int64_t numeroTicks);
+
+
+
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);
 

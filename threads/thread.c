@@ -268,6 +268,10 @@ void agregarListaHilosEspera(int64_t ticks){
 
 }
 
+void eliminarHiloDormido(int64_t numeroTicks){
+
+}
+
 
 
 /* Transitions a blocked thread T to the ready-to-run state.
