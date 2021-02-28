@@ -94,11 +94,16 @@ struct thread
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-    
-    // Added props
+
+   // Added props
+    struct list_elem sleep_elem;
+    struct lock *lock_blocked_by;
     struct list locks;
     bool is_donated;
     int old_priority;
+    int64_t wakeup_ticks;
+    
+    //Finished adding props
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -107,7 +112,6 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
-
   };
 
 /* If false (default), use round-robin scheduler.
@@ -145,5 +149,7 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+bool compare_priority(struct list_elem*,struct list_elem*,void*);
 
 #endif /* threads/thread.h */

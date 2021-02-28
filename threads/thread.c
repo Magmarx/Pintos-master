@@ -28,6 +28,10 @@ static struct list ready_list;
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
 
+/* List of processes in THREAD_BLOCKED state, that is, processes
+   that are blocked .  sleep_list*/
+static struct list sleep_list;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -71,6 +75,162 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
+// Begining custom functions
+
+/*
+* Here we will set the thread's priority and we will be checking
+* the rules for setting the priority. 
+*/
+void
+set_thread_priority (struct thread *cur, int new_priority,bool is_donated)
+{
+  enum intr_level old_level;
+  old_level = intr_disable();
+
+  ASSERT (new_priority >= PRI_MIN && new_priority <= PRI_MAX);
+  ASSERT (is_thread (cur));
+
+  /* if this operation is a not donatation */
+   if (!is_donated) 
+     {
+       /*
+       if the thread has been donated and the new priority is less
+       or equal to the donated priority, we should delay the process
+       by preserve it in priority_original.*/
+       if (cur->is_donated && new_priority <= cur->priority) 
+          cur->old_priority = new_priority;
+       else
+          /*
+          otherwise, just do the donation, set priority to the donated
+          priority, and mark the thread as a donated one.
+          */
+          cur->priority = new_priority;
+          cur->old_priority = new_priority;
+     }
+   else 
+     {
+        cur->priority = new_priority;
+        cur->is_donated = true;
+     }
+
+  if (cur->status == THREAD_READY)
+    {
+      /*
+      * If the thread finished it's process
+      * then we just move it to the ready_list
+      * to keep the list in order
+      */
+      list_remove (&cur->elem);
+      list_insert_ordered (&ready_list, &cur->elem, compare_priority, NULL);
+    }
+  else if (cur->status == THREAD_RUNNING && list_entry (list_begin (&ready_list), struct thread,elem )->priority > cur->priority)
+    {
+      /*
+      * If the thead with the highest priority in the list it's
+      * larger than the current thread priority then we make the
+      * current thread yield the cpu to the other thread
+      */
+      thread_yield_current (cur);
+    }
+
+  intr_set_level (old_level);
+}
+
+void
+thread_yield_current (struct thread *cur)
+{
+  ASSERT (is_thread (cur));
+  enum intr_level old_level;
+
+  ASSERT (!intr_context ());
+
+  old_level = intr_disable ();
+  if (cur != idle_thread) {
+    /*
+    * Make sure that the ready_list is ordered so the thread
+    * with the highest priority run's first
+    */
+    list_insert_ordered(&ready_list, &cur->elem, compare_priority, NULL);
+  }
+  cur->status = THREAD_READY;
+  schedule ();
+  intr_set_level (old_level);
+}
+
+/*Compare wakeup ticks*/
+bool
+compare_ticks(struct list_elem *a,struct list_elem *b,void *AUX UNUSED)
+{
+  struct thread *t1 = list_entry(a,struct thread,elem);
+  struct thread *t2 = list_entry(b,struct thread,elem);
+  return t1->wakeup_ticks<t2->wakeup_ticks;
+}
+
+/*Compare threads priorities*/
+bool
+compare_priority(struct list_elem *a,struct list_elem *b,void *AUX UNUSED){
+struct thread *t1=list_entry(a,struct thread,elem);
+struct thread *t2=list_entry(b,struct thread,elem);
+return t1->priority>t2->priority;
+}
+
+/*Set new temporal priority*/
+void
+thread_priority_temporarily_up(void)
+{
+  struct thread *cur = thread_current();
+  cur->old_priority = cur->priority;
+  cur->priority = 63;
+  return;
+}
+
+/*Restore to old_priority*/
+void
+thread_priority_restore(void)
+{
+  struct thread *cur = thread_current();
+  cur->priority = cur->old_priority;
+  return;
+}
+
+/* Block thread unitl wakeup time is 0 */
+void block_thread_until(int64_t wakeup)
+{
+  enum intr_level old_level;
+  struct thread *cur = thread_current();
+  if(wakeup<=0)
+  {
+    return;
+  }
+  ASSERT(cur->status == THREAD_RUNNING);
+  cur->wakeup_ticks = wakeup;
+  old_level = intr_disable();
+   list_insert_ordered(&sleep_list,&cur->elem,compare_ticks,NULL);
+   thread_block();
+  intr_set_level(old_level);
+}
+
+/* We unblock the next thread in the sleeping thread list */
+void thread_set_next_wakeup(void)
+{
+  enum intr_level old_level;
+  if(list_empty(&sleep_list))
+    return;
+  struct list_elem *elem_cur;
+  struct thread *t;
+  
+  elem_cur = list_begin(&sleep_list);
+  t = list_entry(elem_cur,struct thread,elem);
+  if(t->wakeup_ticks>timer_ticks())
+    return;
+  old_level = intr_disable();
+  list_remove(elem_cur);
+  thread_unblock(t);
+  intr_set_level(old_level);
+}
+
+//Finishing the custom functions
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -92,7 +252,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-
+  list_init (&sleep_list);
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
@@ -134,6 +294,7 @@ thread_tick (void)
   else
     kernel_ticks++;
 
+  thread_set_next_wakeup();
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
@@ -201,6 +362,14 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  /* Yield immediately if the newly created thread has a higher
+   * priority. */
+
+  if(t->priority > thread_current()->priority)
+  {
+    thread_yield_current(thread_current());
+  }
+
   return tid;
 }
 
@@ -237,7 +406,8 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  // list_push_back (&ready_list, &t->elem);
+  list_insert_ordered(&ready_list,&t->elem,compare_priority,NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -308,7 +478,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+    list_insert_ordered (&ready_list, &cur->elem, compare_priority, NULL);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -335,15 +505,17 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  struct thread *curr_thread = thread_current ();	
-	set_thread_priority(curr_thread, new_priority, false);
+  struct thread *cur = thread_current ();
+  // Definimos la prioridad y ponemos en falso el argumento de donacion 
+  set_thread_priority (cur, new_priority, false);
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+  struct thread *cur = thread_current ();
+  return cur->priority;
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -464,6 +636,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  list_init(&t->locks);
+  t->lock_blocked_by = NULL;
+  t->old_priority = priority;
+  t->is_donated=false;
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -542,88 +718,6 @@ thread_schedule_tail (struct thread *prev)
       palloc_free_page (prev);
     }
 }
-
-// Begining custom functions
-
-bool compare_priority(struct list_elem *first_thread,struct list_elem *second_thread,void *AUX UNUSED){
-	struct thread *thread_1=list_entry(first_thread,struct thread,elem);
-	struct thread *thread_2=list_entry(second_thread,struct thread,elem);
-	return thread_1->priority>thread_2->priority;
-}
-
-void thread_yield_current (struct thread *curr_thread) {
-	ASSERT (is_thread (curr_thread));
-	enum intr_level old_level;
-	
-	ASSERT (!intr_context ());
-	
-	old_level = intr_disable ();
-	if (curr_thread != idle_thread) {
-    /*
-    * Make sure that the ready_list is ordered so the thread
-    * with the highest priority run's first
-    */
-	  list_insert_ordered(&ready_list, &curr_thread->elem, compare_priority, NULL);
-	}
-}
-
-void set_thread_priority (struct thread *curr_thread, int new_prior, bool is_donated) {
-
-  enum intr_level old_level = intr_disable();
-
-  ASSERT (new_prior >= PRI_MIN && new_prior <= PRI_MAX);
-  ASSERT (is_thread (curr_thread));
-
-   /* 
-   *  
-   if this operation is a not donatation
-    *   if the thread has been donated and the new priority is less 
-    *   or equal to the donated priority, we should delay the process
-    *   by preserve it in priority_original.
-    * otherwise, just do the donation, set priority to the donated
-    * priority, and mark the thread as a donated one.
-    */ 
-   if (!is_donated) {
-       if (curr_thread->is_donated && new_prior <= curr_thread->priority) {
-          // Here we delay the process so we can preserve it's original priority
-          curr_thread->old_priority = new_prior; 
-        } else {
-          /* 
-          * Here we set the new priority
-          */
-          curr_thread->priority = new_prior;
-          curr_thread->old_priority = new_prior;
-        }
-    } else {
-       /*
-       * Here we do the priority donation and
-       * mark the thread as a donating one.
-       */
-        curr_thread->priority = new_prior;
-        curr_thread->is_donated = true;
-    }
-
-    if (curr_thread->status == THREAD_READY) {
-      /*
-      * If the thread finished it's process
-      * then we just move it to the ready_list
-      * to keep the list in order
-      */
-      list_remove(&curr_thread->elem);
-      list_insert_ordered(&ready_list, &curr_thread->elem, compare_priority, NULL);
-    } else if ((list_entry(list_begin(&ready_list), struct thread, elem)->priority > curr_thread->priority) && curr_thread->status == THREAD_READY) {
-      /*
-      * If the thead with the highest priority in the list it's
-      * larger than the current thread priority then we make the
-      * current thread yield the cpu to the other thread
-      */
-      thread_yield_current(curr_thread);
-    }
-
-  intr_set_level (old_level);
-}
-
-// Finished custom functions
 
 /* Schedules a new process.  At entry, interrupts must be off and
    the running process's state must have been changed from
