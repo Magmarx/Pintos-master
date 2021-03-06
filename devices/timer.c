@@ -1,6 +1,6 @@
 
 /* 
-  Prototipos declarados en el archivo devices/timer.h que se implementan
+  Prototipos declarados en el archivo devices/timer.h necesarios para ser implementados
   en timer.c
 */
 #include "devices/timer.h"
@@ -95,17 +95,15 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  /*
-  CODIGO original dado: 
+  /*CODIGO original realiza busy waiting: 
+
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
   while (timer_elapsed (start) < ticks) 
     thread_yield ();*/
-
-  
-
-
+  ASSERT (intr_get_level () == INTR_ON);
+  agregarListaHilosEspera(ticks);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -178,17 +176,18 @@ timer_print_stats (void)
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
-/* 
-  timer_interrupt es el reloj de pintos. Al ser invocado la variable ticks
-  se incrementa.
-
-  Timer interrupt handler. 
+/* Timer interrupt handler. 
+  timer_interrupt es el reloj de pintos. Al ser invocado la 
 */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+
+  // desbloque los hilos luego de cumplirse su tiempo
+  eliminarHiloDormido(ticks);
+
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

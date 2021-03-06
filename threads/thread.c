@@ -268,7 +268,32 @@ void agregarListaHilosEspera(int64_t ticks){
 
 }
 
+
+/*
+cuando sucede un timer_intept, si el tiempo del hilo ha terminado, se mueve de regreso a ready_list
+con la funcion thread_unblock
+*/
+
 void eliminarHiloDormido(int64_t numeroTicks){
+
+  struct list_elem *iteracion = list_begin(&threadsEsperando);
+
+  while(iteracion != list_end(&threadsEsperando)){
+    struct thread *threadsEsperando = list_entry(iteracion,struct thread,elem);
+    
+    if (numeroTicks>=threadsEsperando->tiempoThreadDormido)
+    {
+      /* code */
+      
+      // quitarlo de lista espera, regresarlo a ready_list
+      iteracion=list_remove(iteracion);
+      thread_unblock(threadsEsperando);      
+
+    }else{
+      iteracion = list_next(iteracion);
+    }
+
+  }
 
 }
 
