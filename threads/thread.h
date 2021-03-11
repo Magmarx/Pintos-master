@@ -23,6 +23,8 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+#define LEVEL_LOCK 8
+#define FAKE_PRIORITY -1
 
 /* A kernel thread or user process.
 
@@ -93,6 +95,16 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+   // Added props
+    struct list_elem sleep_elem;
+    struct lock *lock_blocked_by;
+    struct list locks;
+    bool is_donated;
+    int old_priority;
+    int64_t wakeup_ticks;
+    
+    //Finished adding props
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -137,5 +149,7 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+bool compare_priority(struct list_elem*,struct list_elem*,void*);
 
 #endif /* threads/thread.h */
