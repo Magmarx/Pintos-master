@@ -109,14 +109,13 @@ struct thread
     
     //Finished adding props
 
+
+    // Por favor, no poner nada debajo de unsigned magic
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 #endif
-    /*
-      NO asignar variables debajo de unsigned magic, porque
-
-      puede alterar el la forma en que el sistema se comporta*/
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
