@@ -117,10 +117,9 @@ struct thread
     uint32_t *pagedir;                  /* Page directory. */
 #endif
 
-    /* Owned by thread.c. */
-    unsigned magic;                     /* Detects stack overflow. */
+    /* Owned by thread.c. Detect stack overflow */
+    unsigned magic;                     
     
-
   };
 
 /* If false (default), use round-robin scheduler.
