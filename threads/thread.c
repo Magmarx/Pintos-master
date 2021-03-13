@@ -447,15 +447,15 @@ void eliminarHiloDormido(int64_t numeroTicks){
   struct list_elem *iteracion = list_begin(&threadsEsperando);
 
   while(iteracion != list_end(&threadsEsperando)){
-    struct thread *threadsEsperando = list_entry(iteracion,struct thread,elem);
+    struct thread *threadsListaEsperando = list_entry(iteracion,struct thread,elem);
     
-    if (numeroTicks>=threadsEsperando->tiempoThreadDormido)
+    if (numeroTicks>=threadsListaEsperando->tiempoThreadDormido)
     {
       /* code */
       
       // quitarlo de lista espera, regresarlo a ready_list
       iteracion=list_remove(iteracion);
-      thread_unblock(threadsEsperando);      
+      thread_unblock(threadsListaEsperando);      
 
     }else{
       iteracion = list_next(iteracion);
