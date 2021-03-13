@@ -22,6 +22,9 @@ struct lock
   {
     struct thread *holder;      /* Thread holding lock (for debugging). */
     struct semaphore semaphore; /* Binary semaphore controlling access. */
+    //Added properties
+    int priority_lock;
+    struct list_elem list_element_lock;
   };
 
 void lock_init (struct lock *);
@@ -40,6 +43,12 @@ void cond_init (struct condition *);
 void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
+
+// Begin custom functions structure
+static bool check_lock_priority ( struct list_elem *,
+                                 struct list_elem *,
+                                void *);
+// Finishing custom functions
 
 /* Optimization barrier.
 
