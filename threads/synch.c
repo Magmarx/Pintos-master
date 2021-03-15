@@ -250,10 +250,20 @@ lock_acquire (struct lock *lock)
     {
       set_thread_priority (lock_holder, cur->priority, true);
       /* Priority_lock is the highest priority in its waiters list */
-      if (lock_next->priority_lock < cur->priority)
-        {
-          lock_next->priority_lock = cur->priority;
-        }
+      if (lock_next->priority_lock < cur->priority) {
+        lock_next->priority_lock = cur->priority;
+      }
+
+      /* Nest donation: find the next lock that locks the current	
+	    * lock_holder	
+	    */	
+	    if (lock_holder->lock_blocked_by != NULL && lock_iter < LEVEL_LOCK)	{	
+	      lock_next = lock_holder->lock_blocked_by;	
+	      lock_holder = lock_holder->lock_blocked_by->holder;	
+	      lock_iter ++;	
+	    }	else {
+        break;
+      }
     }
 
   sema_down (&lock->semaphore);
@@ -348,7 +358,6 @@ lock_release (struct lock *lock)
 
   intr_set_level (old_level);
 
-
 }
 
 /* Returns true if the current thread holds LOCK, false
@@ -367,7 +376,22 @@ struct semaphore_elem
   {
     struct list_elem elem;              /* List element. */
     struct semaphore semaphore;         /* This semaphore. */
+    int priority_sema;                  /* Priority Semaphoe*/
   };
+
+bool	
+sema_compare ( struct list_elem *a_, struct list_elem *b_,	
+	                  void *aux UNUSED)	{	
+	ASSERT (a_ != NULL);	
+	ASSERT (b_ != NULL);	
+		
+	struct semaphore_elem *a = list_entry (a_, struct semaphore_elem,	
+	                                               elem);	
+	struct semaphore_elem *b = list_entry (b_, struct semaphore_elem,	
+	                                               elem);	
+		
+	return (a->priority_sema > b->priority_sema);	
+}
 
 /* Initializes condition variable COND.  A condition variable
    allows one piece of code to signal a condition and cooperating
@@ -411,6 +435,9 @@ cond_wait (struct condition *cond, struct lock *lock)
   ASSERT (lock_held_by_current_thread (lock));
   
   sema_init (&waiter.semaphore, 0);
+  waiter.priority_sema = thread_current()->priority;	
+	list_insert_ordered(&cond->waiters,&waiter.elem,sema_compare,NULL);	
+	// list_push_back (&cond->waiters, &waiter.elem);
   lock_release (lock);
   sema_down (&waiter.semaphore);
   lock_acquire (lock);
