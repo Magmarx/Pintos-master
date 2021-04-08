@@ -2,11 +2,9 @@
 
 Este proyecto lo dividimos dentro de 3 Fases:
 
-[Fase #1](https://magmarx.github.io/Pintos-master/fase1.md)
-
-[Fase #2](https://magmarx.github.io/Pintos-master/fase2.md)
-
-[Fase #3](https://magmarx.github.io/Pintos-master/fase3.md)
+1. [Fase #1](https://magmarx.github.io/Pintos-master/fase1.md)
+2. [Fase #2](https://magmarx.github.io/Pintos-master/fase2.md)
+3. [Fase #3](https://magmarx.github.io/Pintos-master/fase3.md)
 
 Integrantes: 
 
