@@ -3,12 +3,17 @@
 Este proyecto lo dividimos dentro de 3 Fases:
 
 [Fase #1](https://magmarx.github.io/Pintos-master/fase1.md)
+
 [Fase #2](https://magmarx.github.io/Pintos-master/fase2.md)
+
 [Fase #3](https://magmarx.github.io/Pintos-master/fase3.md)
 
 Integrantes: 
+
 **Karen Valdez **
+
 **Santos Lopez**
+
 **Miguel Porras**
 
 You can use the [editor on GitHub](https://github.com/Magmarx/Pintos-master/edit/docs/docs/index.md) to maintain and preview the content for your website in Markdown files.
