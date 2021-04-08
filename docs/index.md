@@ -10,7 +10,7 @@ Este proyecto lo dividimos dentro de 3 Fases:
 
 Integrantes: 
 
-**Karen Valdez **
+**Karen Valdez**
 
 **Santos Lopez**
 
