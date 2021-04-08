@@ -10,11 +10,9 @@ Este proyecto lo dividimos dentro de 3 Fases:
 
 Integrantes: 
 
-**Karen Valdez**
-
-**Santos Lopez**
-
-**Miguel Porras**
+- **Karen Valdez**
+- **Santos Lopez**
+- **Miguel Porras**
 
 You can use the [editor on GitHub](https://github.com/Magmarx/Pintos-master/edit/docs/docs/index.md) to maintain and preview the content for your website in Markdown files.
 
