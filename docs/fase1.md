@@ -4,7 +4,7 @@
 
 Dentro de esta fase tuvimos que extender sobre la implementación de threads que nos dieron dentro del codigo de base de Pintos
 
-Dentro del codigo base tenemos una estructura para los threads proporcionada opr pintos, esta se encuentra dentro del archivo thread.h
+Dentro del codigo base tenemos una estructura para los threads proporcionada por pintos, esta se encuentra dentro del archivo **thread.h**
 
 ```c
 thread.h
@@ -88,6 +88,17 @@ timer.c
 El archivo **timer.c** allí se reimplementa 
 
 ### Priority Scheduling 
+
+Dentro de esta fase tuvimos que implementar el calendarizador de tareas dentro de pintos para poder ordenar la prioridad con la que se ejecutan los diferentes threads.
+
+Trabajamos dentro de 4 archivos principalmente, estos se encuentran sobre pintos-master/src/threads/:
+
+~~~
+* thread.h
+* thread.c
+* synch.h
+* synch.c
+~~~
 
 ### Advanced Scheduling
 Por el momento no hemos implementado nada para Advanced scheduling ya que son puntos extras pero si tenemos pensado ver si podemos implementarlo mas adelante
