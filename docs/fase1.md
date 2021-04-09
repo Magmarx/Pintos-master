@@ -91,6 +91,8 @@ El archivo **timer.c** allí se reimplementa
 
 Dentro de esta fase tuvimos que implementar el calendarizador de tareas dentro de pintos para poder ordenar la prioridad con la que se ejecutan los diferentes threads.
 
+Sabemos que Pintos cuenta con una calendarizacion ya implementada dentro de su codigo base la cual se basa en Round-Robin, El cual le asigna a cada thread un tiempo denominado quantum que es equivalente a 4 ticks por default cabe resaltar que en este metodo no existen  prioridades y que todos  los threads son tratados de forma  equitativa.
+
 Trabajamos dentro de 4 archivos principalmente, estos se encuentran sobre pintos-master/src/threads/:
 
 ~~~
@@ -99,6 +101,10 @@ Trabajamos dentro de 4 archivos principalmente, estos se encuentran sobre pintos
 * synch.h
 * synch.c
 ~~~
+
+
+
+
 
 ### Advanced Scheduling
 Por el momento no hemos implementado nada para Advanced scheduling ya que son puntos extras pero si tenemos pensado ver si podemos implementarlo mas adelante
