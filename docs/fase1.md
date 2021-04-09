@@ -155,8 +155,12 @@ timer.c
 
 El archivo **timer.c** allí se mandan a llamar los métodos implementados para eliminar el **busy waiting**
 
+
+
 ## ¿Qué encontramos en la carpeta devices?
 Código fuente para la interfaz del dispositivo de E / S: teclado, temporizador, disco, etc. **Se utiliza para la implementación del temporizador en el proyecto 1.**
+
+**En el archivo timer.h, el temporizador del sistema que marca, de forma predeterminada, 100**
 
 En el método **timer_sleep**
 ```c
