@@ -81,11 +81,20 @@ thread.h
 Se agregaron los mismos métodos como prototipos. **Esto es para indicar que son métodos que se tienen que implementar.**
 <img style="padding-top:30px;width:100%;height:100%;" src="images-fase1/prototipos.png" alt="Prototipos">
 
-En la siguiente imagen se asume que nos encontramos en la carpeta  **devices**
+## ¿Donde mandamos a llamar los métodos implementados?
+Asumiendo que estamos dentro de nuestra carpeta principal llamada **Pintos-master**, en la carpeta  **devices**. El nombre del archivo a modificar es:
 ~~~
 timer.c
 ~~~
-El archivo **timer.c** allí se reimplementa 
+El archivo **timer.c** allí se mandan a llamar los métodos implementados para eliminar el **busy waiting**
+
+En el método **timer_sleep**
+<img style="padding-top:30px;width:100%;height:100%;" src="images-fase1/timerSleep.png" alt="Método timer_sleep">
+
+
+En el método **timer_interrupt**
+<img style="padding-top:30px;width:100%;height:100%;" src="images-fase1/timerInterrupt.png" alt="Método timer_interrupt">
+
 
 ### Priority Scheduling 
 
