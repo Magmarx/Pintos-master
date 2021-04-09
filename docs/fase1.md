@@ -215,6 +215,220 @@ Trabajamos dentro de 4 archivos principalmente, estos se encuentran sobre pintos
 * synch.c
 ~~~
 
+#### Casos de donación
+
+##### Multiple Donations
+
+##### Nested Donation & Dontaion Chain
+
+Este es un escenario de donación en donde si un thread esta esperando al mismo lock que tienen n threads al puede donarles su prioridad para ver cual se libera primero y el poder tomar el siguiente lock. 
+
+Algo importante que tenemos que tener en cuenta aqui es que al ser una donación recursiva esta podria crecer demasiado por lo que debemos de controlar el nivel maximo de donaciones que podemos hacer, pintos recomienda 8.
+
+![](./images-fase1/nested_donation.png)
+
+Tambien dentro de esta sección implementamos el test de donation chains el cual consiste en la propagación de donaciones por medio de un numero arbitrario de niveles para el nested donations.
+
+*Cambios*
+
+~~~
+synch.c
+~~~
+Creamos la funcion de sema_compare, la utlizamos para poder comparar semaforos.
+```c
+bool	sema_compare ( struct list_elem *a_, struct list_elem *b_,	void *aux UNUSED)	{	
+		ASSERT (a_ != NULL);	
+		ASSERT (b_ != NULL);	
+			
+		struct semaphore_elem *a = list_entry (a_, struct semaphore_elem,	elem);	
+		struct semaphore_elem *b = list_entry (b_, struct semaphore_elem,	elem);	
+			
+		return (a->priority_sema > b->priority_sema);		
+}
+```
+Tambien editamos algunas funciones que venian dentro del codigo base de pintos (lock_acquire, cond_wait)
+~~~
+Base Code After Multiple Donations edit synch.c
+~~~
+```c
+void	lock_acquire (struct lock *lock)	{	
+	  ASSERT (lock != NULL);	
+	  ASSERT (!intr_context ());	
+	  ASSERT (!lock_held_by_current_thread (lock));	
+		
+	  struct thread *cur;	
+	  struct thread *lock_holder;	
+	  struct lock *lock_next;	
+	  int lock_iter;	
+		
+		
+	  enum intr_level old_level;	
+	  old_level = intr_disable();	
+	  cur = thread_current();	
+	  lock_holder = lock->holder;	
+	  lock_next = lock;	
+	  lock_iter = 0;	
+		
+	  if(lock_holder !=NULL)	
+	  {	
+	    cur->lock_blocked_by = lock;	
+	  }	
+		
+	  while (!thread_mlfqs && lock_holder != NULL &&	
+	         lock_holder->priority < cur->priority)	
+	    {	
+	      set_thread_priority (lock_holder, cur->priority, true);	
+	      /* Priority_lock is the highest priority in its waiters list */	
+	      if (lock_next->priority_lock < cur->priority)	
+	        {	
+	          lock_next->priority_lock = cur->priority;	
+	        }	
+	    }	
+     
+	  sema_down (&lock->semaphore);	
+	  lock->holder = cur;	
+		
+	  if (!thread_mlfqs)	
+	    {	
+	      /* After getting this lock, reset lock_blocked_by and add this lock	
+	       * to the locks list	
+	       */	
+	      cur->lock_blocked_by = NULL;	
+	      list_insert_ordered (&cur->locks, &lock->list_element_lock,	
+	                           check_lock_priority, NULL);	
+	    }	
+	  intr_set_level (old_level);	
+	}
+ 
+ void	cond_wait (struct condition *cond, struct lock *lock) {	
+	  struct semaphore_elem waiter;	
+		
+	  ASSERT (cond != NULL);	
+	  ASSERT (lock != NULL);	
+	  ASSERT (!intr_context ());	
+	  ASSERT (lock_held_by_current_thread (lock));	
+	  	
+	  sema_init (&waiter.semaphore, 0);	
+
+	  lock_release (lock);	
+	  sema_down (&waiter.semaphore);	
+	  lock_acquire (lock);	
+	}
+```
+
+~~~
+Edited synch.c
+~~~
+
+*Cambios en lock_acquiere*
+1. Agregamos el if que nos permitira agregar la logica para los nested donations, en el cual preguntamos si el lock_holder (el thread que tiene al lock actualmente) esta bloqueado por algun otro thread y no hemos llegado a nuestro limite de niveles para el nested donation
+2. Si esto se cumple vamos a colocar el siguiente lock en el que lo esta bloqueando y luego el actual se va a volver el que lo tiene bloqueado
+3. Vamos a seguir iterando hasta que se liberen los locks
+*Cambios cond_wait*
+1. Asignamos una prioridad al semaforo igual a la prioridad del threead actual
+2. Ordenamos la lista de semaforos basandonos en la prioridad de cada uno
+```c
+void lock_acquire (struct lock *lock) {
+	  ASSERT (lock != NULL);
+	  ASSERT (!intr_context ());
+	  ASSERT (!lock_held_by_current_thread (lock));
+	
+	  struct thread *cur;
+	  struct thread *lock_holder;
+	  struct lock *lock_next;
+	  int lock_iter;
+	
+	
+	  enum intr_level old_level;
+	  old_level = intr_disable();
+	  cur = thread_current();
+	  lock_holder = lock->holder;
+	  lock_next = lock;
+	  lock_iter = 0;
+	
+	  if(lock_holder !=NULL)
+	  {
+	    cur->lock_blocked_by = lock;
+	  }
+	
+	  while (!thread_mlfqs && lock_holder != NULL &&
+	         lock_holder->priority < cur->priority)
+	    {
+	      set_thread_priority (lock_holder, cur->priority, true);
+	      /* Priority_lock is the highest priority in its waiters list */
+	      if (lock_next->priority_lock < cur->priority) {
+	        lock_next->priority_lock = cur->priority;
+	      }
+	
+	     /* Nest donation: find the next lock that locks the current	
+		    * lock_holder	
+		    */	
+		    if (lock_holder->lock_blocked_by != NULL && lock_iter < LEVEL_LOCK)	{	
+		      lock_next = lock_holder->lock_blocked_by;	
+		      lock_holder = lock_holder->lock_blocked_by->holder;	
+		      lock_iter ++;	
+		    }	else {
+	        break;
+	      }
+	    }
+	
+	  sema_down (&lock->semaphore);
+	  lock->holder = cur;
+	
+	  if (!thread_mlfqs)
+	    {
+	      /* After getting this lock, reset lock_blocked_by and add this lock
+	       * to the locks list
+	       */
+	      cur->lock_blocked_by = NULL;
+	      list_insert_ordered (&cur->locks, &lock->list_element_lock,
+	                           check_lock_priority, NULL);
+	    }
+	  intr_set_level (old_level);
+	
+	}
+ 
+void cond_wait (struct condition *cond, struct lock *lock) {
+	  struct semaphore_elem waiter;
+	
+	  ASSERT (cond != NULL);
+	  ASSERT (lock != NULL);
+	  ASSERT (!intr_context ());
+	  ASSERT (lock_held_by_current_thread (lock));
+	  
+	  sema_init (&waiter.semaphore, 0);
+	  waiter.priority_sema = thread_current()->priority;	
+		 list_insert_ordered(&cond->waiters,&waiter.elem,sema_compare,NULL);	
+	 	// list_push_back (&cond->waiters, &waiter.elem);
+	  lock_release (lock);
+	  sema_down (&waiter.semaphore);
+	  lock_acquire (lock);
+	}
+```
+Editamos una estructura dentro del codgo base (semaphone_elem)
+
+~~~
+Base Code After Multiple Donations edit synch.c
+~~~
+```c
+struct semaphore_elem 
+{
+	   struct list_elem elem;              /* List element. */
+	   struct semaphore semaphore;         /* This semaphore. */
+};
+```
+
+~~~
+Edited synch.c
+~~~
+```c
+struct semaphore_elem 
+{
+	   struct list_elem elem;              /* List element. */
+	   struct semaphore semaphore;         /* This semaphore. */
+	   int priority_sema;                  /* Priority Semaphoe*/
+};
+```
 
 
 
