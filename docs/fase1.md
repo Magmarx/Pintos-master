@@ -324,6 +324,7 @@ Edited synch.c
 1. Agregamos el if que nos permitira agregar la logica para los nested donations, en el cual preguntamos si el lock_holder (el thread que tiene al lock actualmente) esta bloqueado por algun otro thread y no hemos llegado a nuestro limite de niveles para el nested donation
 2. Si esto se cumple vamos a colocar el siguiente lock en el que lo esta bloqueando y luego el actual se va a volver el que lo tiene bloqueado
 3. Vamos a seguir iterando hasta que se liberen los locks
+
 *Cambios cond_wait*
 1. Asignamos una prioridad al semaforo igual a la prioridad del threead actual
 2. Ordenamos la lista de semaforos basandonos en la prioridad de cada uno
@@ -429,6 +430,53 @@ struct semaphore_elem
 	   int priority_sema;                  /* Priority Semaphoe*/
 };
 ```
+
+~~~
+Cambios en thread.h
+~~~
+1. Agregamos una variable global para representar la cantidad maxima de iteraciones que se pueden hacer de nested donations (LEVEL_LOCK)
+2. Agregamos algunas propiedades adicionales a la estructura de threads (sleep_elem, lock_blocked_by, wakeup_ticks)
+3. Creamos una nueva funcion (compare_priority)
+
+```c
+
+#define LEVEL_LOCK 8
+	
+struct thread {
+	/* Owned by thread.c. */
+	tid_t tid;                          /* Thread identifier. */
+	enum thread_status status;          /* Thread state. */
+	char name[16];                      /* Name (for debugging purposes). */
+	uint8_t *stack;                     /* Saved stack pointer. */
+	int priority;                       /* Priority. */
+	struct list_elem allelem;           /* List element for all threads list. */
+	
+	/* Shared between thread.c and synch.c. */
+	struct list_elem elem;              /* List element. */
+	
+	// Added properties
+	struct list_elem sleep_elem;
+	struct lock *lock_blocked_by;
+	struct list locks;
+	bool is_donated;
+	int old_priority;
+	int64_t wakeup_ticks;    
+	//Finished adding props
+	
+	#ifdef USERPROG
+	    /* Owned by userprog/process.c. */
+	    uint32_t *pagedir;                  /* Page directory. */
+	#endif
+	
+	/* Owned by thread.c. */
+	unsigned magic;                     /* Detects stack overflow. */
+};
+
+bool compare_priority(struct list_elem*,struct list_elem*,void*);
+
+```
+
+
 
 
 
