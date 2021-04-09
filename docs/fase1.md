@@ -4,7 +4,7 @@ Dentro de esta fase tuvimos que extender sobre la implementación de threads que
 
 Dentro del codigo base tenemos una estructura para los threads proporcionada opr pintos, esta se encuentra dentro del archivo thread.h
 
-~~~
+```c
 thread.h
 struct thread 
 {
@@ -18,11 +18,11 @@ struct thread
  /* Estas propiedades estan compartidas entre thread.c y synch.c. */
  struct list_elem elem;              /* Listado de los elementos que tiene el thread. */
 }
-~~~
+```
 
 Dentro de thread.h tambien vienen unas funciones por defecto las cuales son:
 
-~~~
+```c
 thread.h
 
 void thread_init (void); /* Inicializa las estructuras globales que todos los threads utilizan, como locks o semáforos. */
@@ -34,7 +34,7 @@ void thread_foreach (thread_action_func *, void *); /* Toma la función pasada c
 int thread_get_priority (void); /* Retorna la prioridad del thread actual en ejecución (Implementada en la  Priority Scheduling). */
 void thread_set_priority (int); /* Toma el entero pasado como argumento, y cambia la prioridad del thread actual en ejecución al valor de este entero. (Implementada en la  Priority Scheduling). */
 
-~~~
+```
 
 La linea de ejecución de los threads dentor de pintos es la siguiente:
 
