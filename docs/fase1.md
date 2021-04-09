@@ -195,6 +195,11 @@ timer_interrupt (struct intr_frame *args UNUSED)
 }
 ```
 
+
+**Recomendaciones para no alterar los resultados del autograder**
+El argumento de timer_sleep () se expresa en tics del temporizador, no en milisegundos ni en ninguna otra unidad. Hay tics del temporizador TIMER_FREQ por segundo, donde **TIMER_FREQ es una macro definida en devices / timer.h.** El valor predeterminado es 100. **No es recomendable cambiar este valor, ya que es probable que cualquier cambio provoque la falla de muchas de las pruebas.**
+
+
 ### Priority Scheduling 
 
 Dentro de esta fase tuvimos que implementar el calendarizador de tareas dentro de pintos para poder ordenar la prioridad con la que se ejecutan los diferentes threads.
