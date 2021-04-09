@@ -1,5 +1,7 @@
 ## Fase #1 - Threads
 
+[Home](https://magmarx.github.io/Pintos-master/)
+
 Dentro de esta fase tuvimos que extender sobre la implementación de threads que nos dieron dentro del codigo de base de Pintos
 
 Dentro del codigo base tenemos una estructura para los threads proporcionada opr pintos, esta se encuentra dentro del archivo thread.h
