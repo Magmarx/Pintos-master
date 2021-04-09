@@ -46,14 +46,14 @@ Esta fase se divide en 3 partes
 
 ## Alarm Clock
 En la carpeta **src/threads/** los siguientes archivos son necesarios para modificar el **Alarm Clock**:
-~~~
+```c
 thread.c
 thread.h
-~~~
+```
 
 ### Problema inicial
 Inicialmente el método **timer_sleep** tiene la siguiente implementación.
-~~~
+```c
 void
 timer_sleep (int64_t ticks) 
 {
@@ -63,7 +63,7 @@ timer_sleep (int64_t ticks)
   while (timer_elapsed (start) < ticks) 
     thread_yield ();
 }
-~~~
+```
 Está implementación se conoce como **"busy waiting"**, en está implementación se revisa si el hilo debe estar durmiendo, al estarlo le da su lugar a otro hilo, **thread_yield()**, por lo tanto se calanderiza un nuevo hilo al procesador.
 
 ## Métodos agregados en Alarm Clock
@@ -71,30 +71,125 @@ En la siguiente imagen fueron agregados 2 métodos en el archivo:
 ~~~
 thread.c
 ~~~
-<img style="padding-top:30px;width:100%;height:100%;" src="images-fase1/agregarListaHilos.png" alt="Método agregar lista hilos en archivo thread.c">
-<img style="padding-top:30px;width:100%;height:100%;" src="images-fase1/eliminarHiloDormido.png" alt="Método eliminar hilos dormidos en archivo thread.c">
+
+```c
+void agregarListaHilosEspera(int64_t ticks){
+  /*interrup.c, necesario para deshabilitar interrupciones*/
+  enum intr_level antiguoNivel;
+
+  /* Archivo threads/interrupt.c Disables interrupts and returns the previous interrupt status. */
+  antiguoNivel = intr_disable();
+
+  //retorna un puntero al hilo actual
+  struct thread *hiloActual = thread_current();
+
+  /* remueva el thread que se enuentra en estado ready list del struct
+    list threadsEsperando. Realiza un cambio de estado, a thread blocked
+  */
+
+  //timer_ticks() Returns the number of timer ticks since the OS booted.
+  // tiempoThreadDormido de thread.h
+  hiloActual->tiempoThreadDormido = timer_ticks()+ticks;
+
+  list_push_back(&threadsEsperando,&hiloActual->elem);
+
+  // bloquea al thread actual en ejecucion
+  thread_block();
+
+  // habilitar interrupciones
+  intr_set_level(antiguoNivel);
+}
+```
+
+
+```c
+/*
+cuando sucede un timer_intept, si el tiempo del hilo ha terminado, se mueve de regreso a ready_list
+con la funcion thread_unblock
+*/
+
+void eliminarHiloDormido(int64_t ticks){
+
+  struct list_elem *iteracion = list_begin(&threadsEsperando);
+
+  while(iteracion != list_end(&threadsEsperando)){
+    struct thread *threadsListaEsperando = list_entry(iteracion,struct thread,elem);
+
+    if (ticks>=threadsListaEsperando->tiempoThreadDormido)
+    {
+      /* code */
+      // quitarlo de lista espera, regresarlo a ready_list
+      iteracion=list_remove(iteracion);
+      thread_unblock(threadsListaEsperando);
+    }else{
+      iteracion = list_next(iteracion);
+    }
+  }
+}
+```
 
 En el archivo 
 ~~~
 thread.h
 ~~~
 Se agregaron los mismos métodos como prototipos. **Esto es para indicar que son métodos que se tienen que implementar.**
-<img style="padding-top:30px;width:100%;height:100%;" src="images-fase1/prototipos.png" alt="Prototipos">
+
+```c
+/* Prototipo necesario para reimplementar el metodo timer_sleep del archivo timer.c
+  para solucionar el busy waiting inicial
+  agregarListaHilosEspera(ticks), lo que hace es bloquear al hilo actual, insertarlo en una lista 
+  de hilos en espera de cumplir el tiempo que deben estar dormidos.
+*/
+void agregarListaHilosEspera(int64_t ticks);
+
+/*prototipo que desbloquea los hilos que estan durmiendo luego de cierto tiempo. Implementacion en thread.c*/
+void eliminarHiloDormido(int64_t numeroTicks);
+
+```
 
 ## ¿Donde mandamos a llamar los métodos implementados?
 Asumiendo que estamos dentro de nuestra carpeta principal llamada **Pintos-master**, en la carpeta  **devices**. El nombre del archivo a modificar es:
 ~~~
 timer.c
 ~~~
+
 El archivo **timer.c** allí se mandan a llamar los métodos implementados para eliminar el **busy waiting**
 
-En el método **timer_sleep**
-<img style="padding-top:30px;width:100%;height:100%;" src="images-fase1/timerSleep.png" alt="Método timer_sleep">
+## ¿Qué encontramos en la carpeta devices?
+Código fuente para la interfaz del dispositivo de E / S: teclado, temporizador, disco, etc. **Se utiliza para la implementación del temporizador en el proyecto 1.**
 
+En el método **timer_sleep**
+```c
+/* Sleeps for approximately TICKS timer ticks.  Interrupts must
+   be turned on. */
+void
+timer_sleep (int64_t ticks) 
+{
+  /*CODIGO original realiza busy waiting: 
+  int64_t start = timer_ticks ();
+  ASSERT (intr_get_level () == INTR_ON);
+  while (timer_elapsed (start) < ticks) 
+    thread_yield ();*/
+  ASSERT (intr_get_level () == INTR_ON);
+  agregarListaHilosEspera(ticks);
+}
+```
 
 En el método **timer_interrupt**
-<img style="padding-top:30px;width:100%;height:100%;" src="images-fase1/timerInterrupt.png" alt="Método timer_interrupt">
+```c
+/* Timer interrupt handler. 
+  timer_interrupt es el reloj de pintos. Al ser invocado la 
+*/
+static void
+timer_interrupt (struct intr_frame *args UNUSED)
+{
+  ticks++;
+  thread_tick ();
 
+  // desbloque los hilos luego de cumplirse su tiempo
+  eliminarHiloDormido(ticks);
+}
+```
 
 ### Priority Scheduling 
 
