@@ -38,7 +38,7 @@ void thread_set_priority (int); /* Toma el entero pasado como argumento, y cambi
 
 La linea de ejecución de los threads dentor de pintos es la siguiente:
 
-![](./images-fase1/)
+![](./images-fase1/ThreadsMap.png)
 
 Esta fase se divide en 3 partes
 
