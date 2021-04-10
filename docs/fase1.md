@@ -237,7 +237,6 @@ luego agregamos una estructura nueva para la funcion de check_lock_priority la c
    synch.h
    
    static bool check_lock_priority (struct list_elem *, struct list_elem *, void *);
-    }
 ```
 ##### Synch.c
 
@@ -350,7 +349,6 @@ En el caso de que haya terminado el thread en el lock actual lo que vamos hacer 
 	                         check_lock_priority, NULL);
 	  }
 	  intr_set_level (old_level);
-}
   
 ```
 
