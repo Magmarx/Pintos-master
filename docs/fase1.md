@@ -218,6 +218,9 @@ Trabajamos dentro de 4 archivos principalmente, estos se encuentran sobre pintos
 #### Casos de donación
 
 ##### Multiple Donations
+
+![](./images-fase1/multiple_donation.png)
+
 ##### Synch.h
 En este archivo vamos a implementar lo que son las propiedades para el lock
 
