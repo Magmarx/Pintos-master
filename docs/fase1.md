@@ -381,6 +381,42 @@ libero un espacio
   
 ```
 
+##### Thread.h
+```c
+
+// Agregamos las nuevas propiedades 
+#define FAKE_PRIORITY -1 // Es una propiedad que vamos a usar para idenficiar que que locks estan libres
+
+struct thread
+  {
+    /* Owned by thread.c. */
+    tid_t tid;                          /* Thread identifier. */
+    enum thread_status status;          /* Thread state. */
+    char name[16];                      /* Name (for debugging purposes). */
+    uint8_t *stack;                     /* Saved stack pointer. */
+    int priority;                       /* Priority. */
+    struct list_elem allelem;           /* List element for all threads list. */
+
+    /* Shared between thread.c and synch.c. */
+    struct list_elem elem;              /* List element. */
+    
+    // Added props
+    struct list locks; // Con eso vamos a saber que locks estan asociados al thread
+    bool is_donated; //Sabemos si el thread tuvo una prioridad donada
+    int old_priority; // guardamos la prioridad que tenia antes que le donaran la nueva prioridad
+
+#ifdef USERPROG
+    /* Owned by userprog/process.c. */
+    uint32_t *pagedir;                  /* Page directory. */
+#endif
+
+    /* Owned by thread.c. */
+    unsigned magic;                     /* Detects stack overflow. */
+
+  };
+   
+```
+
 Editamos la función de thread_set_priority para que llame a una función custom que creamos para que esta administre todas las reglas de donación
 ```c
 void thread_set_priority (int new_priority) {
