@@ -476,6 +476,97 @@ bool compare_priority(struct list_elem*,struct list_elem*,void*);
 
 ```
 
+~~~
+Elementos creados para el archivo de thread.c
+~~~
+Dentro del archivo de thread.c para nested donations creamos multiples funciones:
+1. compare_ticks: nos permite comparar ticks dentro de threads
+2. thread_priority_temporarily_up: Nos va a permitir incrementar a la prioridad maxima de un thread
+3. thread_priority_restore: Va a retornar la prioridad de un thread a su prioridad original
+4. block_thread_until: Nos va a permitir dormir un thread por una cantidad de ticks que recibimos como parametro
+6. thread_set_next_wakeup: Despertamos al siguiente threead con mayor prioridad dentro de la lista de threads dormidos
+
+```c
+	/*Compare wakeup ticks*/
+	bool
+	compare_ticks(struct list_elem *a,struct list_elem *b,void *AUX UNUSED)
+	{
+	  struct thread *t1 = list_entry(a,struct thread,elem);
+	  struct thread *t2 = list_entry(b,struct thread,elem);
+	  return t1->wakeup_ticks<t2->wakeup_ticks;
+	}
+	
+	/*Set new temporal priority*/
+	void
+	thread_priority_temporarily_up(void)
+	{
+	  struct thread *cur = thread_current();
+	  cur->old_priority = cur->priority;
+	  cur->priority = 63;
+	  return;
+	}
+	
+	/*Restore to old_priority*/
+	void
+	thread_priority_restore(void)
+	{
+	  struct thread *cur = thread_current();
+	  cur->priority = cur->old_priority;
+	  return;
+	}
+	
+	/* Block thread unitl wakeup time is 0 */
+	void block_thread_until(int64_t wakeup)
+	{
+	  enum intr_level old_level;
+	  struct thread *cur = thread_current();
+	  if(wakeup<=0)
+	  {
+	    return;
+	  }
+	  ASSERT(cur->status == THREAD_RUNNING);
+	  cur->wakeup_ticks = wakeup;
+	  old_level = intr_disable();
+	   list_insert_ordered(&sleep_list,&cur->elem,compare_ticks,NULL);
+	   thread_block();
+	  intr_set_level(old_level);
+	}
+	
+	/* We unblock the next thread in the sleeping thread list */
+	void thread_set_next_wakeup(void)
+	{
+	  enum intr_level old_level;
+	  if(list_empty(&sleep_list))
+	    return;
+	  struct list_elem *elem_cur;
+	  struct thread *t;
+	  
+	  elem_cur = list_begin(&sleep_list);
+	  t = list_entry(elem_cur,struct thread,elem);
+	  if(t->wakeup_ticks>timer_ticks())
+	    return;
+	  old_level = intr_disable();
+	  list_remove(elem_cur);
+	  thread_unblock(t);
+	  intr_set_level(old_level);
+	}
+	
+```
+
+~~~
+Ediciones sobre thread.c
+~~~
+1. inicializamos la lista de threads dormidos dentro de *thread_init* con ```c list_init (&sleep_list); ```
+2. Dentro de *thread_tick* llamamos a la funcion thread_set_next_wakeup();
+3. Dentro de *thread_create* agregamos un if para que el current_threead ceda el procesador si el nuevo thread tiene mayor prioridad
+
+```c
+/* Yield immediately if the newly created thread has a higher priority. */
+if(t->priority > thread_current()->priority) {
+	thread_yield_current(thread_current());
+}
+```
+
 
 
 
