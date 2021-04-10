@@ -381,6 +381,135 @@ libero un espacio
   
 ```
 
+Editamos la función de thread_set_priority para que llame a una función custom que creamos para que esta administre todas las reglas de donación
+```c
+void thread_set_priority (int new_priority) {
+	struct thread *curr_thread = thread_current ();	
+	  /* 
+	  Vamos a llamar a la nueva funcion que creamos para realizar
+	  el nuevo set de prioridades tomando en cuenta los metodos de donacion
+	  */
+	set_thread_priority(curr_thread, new_priority, false);
+}
+
+void set_thread_priority (struct thread *curr_thread, int new_prior, bool is_donated) {
+
+  enum intr_level old_level = intr_disable();
+
+  /* 
+  Primero vamos a verificar que la prioridad
+  del thread este dentro de nuestro minimo de 0
+  y maximo de 63
+
+  Y verificamos que el thread activo sea un thread
+  */
+  ASSERT (new_prior >= PRI_MIN && new_prior <= PRI_MAX);
+  ASSERT (is_thread (curr_thread));
+
+   /* 
+   *  
+   if this operation is a not donatation
+    *   if the thread has been donated and the new priority is less 
+    *   or equal to the donated priority, we should delay the process
+    *   by preserve it in priority_original.
+    * otherwise, just do the donation, set priority to the donated
+    * priority, and mark the thread as a donated one.
+    */ 
+   if (!is_donated) {
+     /* Este es el caso en el que no sea una donacion */
+       if (curr_thread->is_donated && new_prior <= curr_thread->priority) {
+         /* 
+         En el caso de que al thread ya le hayan donado antes una prioridad 
+         y que la nueva prioridad sea menor o igual a la prioridad anterior
+         que tenia el thread, vamos a guardar la nueva prioridad en la 
+         propiedad de old_priority
+         */
+          // Here we delay the process so we can preserve it's original priority
+          curr_thread->old_priority = new_prior; 
+        } else {
+          /* 
+          * En el caso contrario vamos a setear la nueva prioridad que se nos envio
+          */
+          curr_thread->priority = new_prior;
+          curr_thread->old_priority = new_prior;
+        }
+    } else {
+       /*
+       * Here we do the priority donation and
+       * mark the thread as a donating one.
+       */
+
+       /*
+       Ahora en el caso de que si sea una donacion
+       vamos a setear la nueva prioridad y vamos a 
+       colocar la variable de is_donated como true
+       */
+        curr_thread->priority = new_prior;
+        curr_thread->is_donated = true;
+    }
+
+    if (curr_thread->status == THREAD_READY) {
+      /*
+      * If the thread finished it's process
+      * then we just move it to the ready_list
+      * to keep the list in order
+      */
+
+      /*
+        En el caso de que nuestro thread ya haya terminado
+        con su proceso solo vamos a mover el thread a la lista
+        de ready_list para mantener todo ordenado
+      */
+      list_remove(&curr_thread->elem);
+      list_insert_ordered(&ready_list, &curr_thread->elem, compare_priority, NULL);
+    } else if ((list_entry(list_begin(&ready_list), struct thread, elem)->priority > curr_thread->priority) && curr_thread->status == THREAD_READY) {
+      /*
+      * If the thread with the highest priority in the list it's
+      * larger than the current thread priority then we make the
+      * current thread yield the cpu to the other thread
+      */
+
+      /*
+      En el caso que el thread que tenga la mayor prioridad de la lista
+      de espera tenga una mayor prioridad que el thread activo entonces 
+      vamos a hacer que el thread activo ceda el procesador al nuevo thread.
+      */
+      thread_yield_current(curr_thread);
+    }
+
+  intr_set_level (old_level);
+}
+
+```
+
+Tambien creamos algunas funciones dentro de thread.c
+1. compare_priority: Esta funcion nos va a ayudar a comparar la prioridad entre dos threads
+2. thread_yield_current: Esta funcion nos va a permitir hacerle yield (ceder) al thread que esta activo actualmente
+
+```c
+bool compare_priority(struct list_elem *first_thread,struct list_elem *second_thread,void *AUX UNUSED){
+	struct thread *thread_1=list_entry(first_thread,struct thread,elem);
+	struct thread *thread_2=list_entry(second_thread,struct thread,elem);
+	return thread_1->priority>thread_2->priority;
+}
+
+void thread_yield_current (struct thread *curr_thread) {
+	ASSERT (is_thread (curr_thread));
+	enum intr_level old_level;
+	
+	ASSERT (!intr_context ());
+	
+	old_level = intr_disable ();
+	if (curr_thread != idle_thread) {
+	    /*
+	    * Make sure that the ready_list is ordered so the thread
+	    * with the highest priority run's first
+	    */
+	  list_insert_ordered(&ready_list, &curr_thread->elem, compare_priority, NULL);
+	}
+}
+```
+
 ##### Nested Donation & Dontaion Chain
 
 Este es un escenario de donación en donde si un thread esta esperando al mismo lock que tienen n threads al puede donarles su prioridad para ver cual se libera primero y el poder tomar el siguiente lock. 
