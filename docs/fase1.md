@@ -218,6 +218,170 @@ Trabajamos dentro de 4 archivos principalmente, estos se encuentran sobre pintos
 #### Casos de donación
 
 ##### Multiple Donations
+##### Synch.h
+En este archivo vamos a implementar lo que son las propiedades para el lock
+
+
+```c
+   synch.h
+   
+   struct lock {
+    int priority_lock; 
+    struct list_elem list_element_lock 
+    }
+```
+
+luego agregamos una estructura nueva para la funcion de check_lock_priority la cual nos ayudara a poder comparar la prioridad entre locks.
+
+```c
+   synch.h
+   
+   static bool check_lock_priority (struct list_elem *, struct list_elem *, void *);
+    }
+```
+##### Synch.c
+
+En este archivo vamos a implementar lo que biene siéndo el encargado de administrar la logica de cuando es necesario donar prioridad
+
+
+```c
+   synch.c
+   void lock_init (struct lock *lock) {
+    ASSERT (lock != NULL);
+    
+    lock->holder = NULL;
+    sema_init (&lock->semaphore, 1);
+     
+    lock->priority_lock = FAKE_PRIORITY;
+    }
+```
+vamos a inicializar la prioridad de nuestro lock como -1
+```c
+   synch.c
+  void lock_acquire (struct lock *lock) {	
+	ASSERT (lock != NULL);	
+	ASSERT (!intr_context ());	
+	ASSERT (!lock_held_by_current_thread (lock));
+
+    struct thread *cur;
+	struct thread *lock_holder;
+	struct lock *lock_next;
+	int lock_iter;
+
+
+	enum intr_level old_level;
+	old_level = intr_disable();
+	cur = thread_current();
+	lock_holder = lock->holder;
+	lock_next = lock;
+	lock_iter = 0;
+}
+```
+En esta funcion vamos a obtener el tread que tiene el lock actual, donde el cur y lock_holder deben ser los mismos y obtenemos el lock.
+
+```c
+   synch.c
+  void lock_acquire (struct lock *lock) {	
+	ASSERT (lock != NULL);	
+	ASSERT (!intr_context ());	
+	ASSERT (!lock_held_by_current_thread (lock));
+
+    struct thread *cur;
+	struct thread *lock_holder;
+	struct lock *lock_next;
+	int lock_iter;
+
+
+	enum intr_level old_level;
+	old_level = intr_disable();
+	cur = thread_current();
+	lock_holder = lock->holder;
+	lock_next = lock;
+	lock_iter = 0;
+}
+```
+
+
+En el caso que el lock ya tenga un lock asignado vamos a decirle a nuestro thread actual que lock debemos de obtener cuando se desocupe.
+
+```c
+   synch.c
+   	if(lock_holder !=NULL)
+	{
+        /* 
+        En el caso que el lock ya tenga un lock asignado
+        vamos a decirle a nuestro thread actual el lock
+        que va a pedir cuando se desocupe.
+        */
+	  cur->lock_blocked_by = lock;
+	}
+  
+```
+
+En el caso de que se encuentre un thread en el lock y la prioridad del thread que se encuentra actualmente en el lock sea menor a la prioridad del thread que se encuentra en espera. debemos de llamar a la funcion set_thread_priority que se encuentra en el archivo thread.c la cual veremos a detalle mas adelante.
+
+Priority_lock es la priodirdad mas alta en su lista. En el caso de que el nuevo thread tenga una prioridad mayor el que viene despues en la fila el que se encuentra en el lock_next vamos a donarle la prioridad de nuestro thread actual al siguiente en la fila 
+
+```c
+   synch.c
+   	while (!thread_mlfqs && lock_holder != NULL &&
+	       lock_holder->priority < cur->priority)
+	  {
+	    set_thread_priority (lock_holder, cur->priority, true);
+  
+	    if (lock_next->priority_lock < cur->priority)
+	      {
+	        lock_next->priority_lock = cur->priority;
+	      }
+	  }
+   
+   sema_down (&lock->semaphore);
+	  lock->holder = cur;
+  
+```
+En el caso de que haya terminado el thread en el lock actual lo que vamos hacer es poner el siguiente thread dentro del lock y vamos a reordenar la lista de los threads que estan esperando
+
+```c
+   synch.c
+   	if (!thread_mlfqs)
+	  {
+	    cur->lock_blocked_by = NULL;
+	    list_insert_ordered (&cur->locks, &lock->list_element_lock,
+	                         check_lock_priority, NULL);
+	  }
+	  intr_set_level (old_level);
+}
+  
+```
+
+obtenemos el thread actual y guardamos la prioridad del thread actual dejando vacio el holder del lock y le avisamos al semaforo que ya se libero un espacio luego eliminamos los valores que tenga el lock y colocamos su prioridad como -1. Si el thread actual no tiene ningun lock
+
+```c
+   synch.c
+   void lock_release (struct lock *lock) {
+    ASSERT (lock != NULL);
+    ASSERT (lock_held_by_current_thread (lock));
+
+    struct thread *curr_thread;
+    curr_thread = thread_current();
+  
+    enum intr_level old_level;
+    old_level = intr_disable();
+    
+libero un espacio
+    lock->holder = NULL;
+    sema_up (&lock->semaphore);
+
+    list_remove(&lock->list_element_lock);
+    lock->priority_lock = FAKE_PRIORITY;
+
+    if (list_empty(&curr_thread->locks)) {
+        curr_thread->is_donated = false;
+        thread_set_priority(curr_thread->old_priority);
+    }
+}
+  
+```
 
 ##### Nested Donation & Dontaion Chain
 
