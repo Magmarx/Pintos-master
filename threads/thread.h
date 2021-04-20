@@ -102,8 +102,13 @@ struct thread
     bool is_donated;
     int old_priority;
     int64_t wakeup_ticks;
-    
+
     //Finished adding props
+
+
+    // Mlfqs
+    int niceValue;
+
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
