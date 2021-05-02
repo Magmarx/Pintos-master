@@ -525,8 +525,9 @@ thread_set_nice (int nice UNUSED)
   struct thread *hilo = thread_current();
 
   //Definimos la prioridad y ponemos en falso el argumento de donacion
-  set_thread_priority(hilo,nice,false);
-
+  
+  //set_thread_priority(hilo,nice,false);
+  hilo->niceValue;
 }
 
 /* Returns the current thread's nice value. */
@@ -543,6 +544,11 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void)
 {
+  //debe actualizarse cuando el contador de ticks del sistema alcance un multiplo de un segundo
+  if (timer_ticks()%TIMER_FREQ)
+  {
+    /* code */
+  }
   /* Not yet implemented. */
   return 0;
 }
@@ -554,6 +560,23 @@ thread_get_recent_cpu (void)
   /* Not yet implemented. */
   return 0;
 }
+
+
+// promedio carga del sistema, estima el numero promedio de subprocesos listos para ejecutarse durante el ultimo minuto, load_Avg es para todo el sistema
+int calcularLoadAVG(int loadAVG,struct thread *t){
+  int numero1 = 1;
+  int numero59 = 59;
+  int numero60 = 60; 
+
+  int divisionNumero59y60 = (numero59) / (numero60);
+
+  int divisionNumero1y60 = (numero1) / (numero60);
+
+
+  int ecuacionLoadAvg =  (divisionNumero59y60) * (ecuacionLoadAvg) + ecuacionLoadAvg + (divisionNumero1y60);
+  return ecuacionLoadAvg;
+}
+
 
 /* Idle thread.  Executes when no other thread is ready to run.
 

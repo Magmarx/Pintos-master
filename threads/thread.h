@@ -5,6 +5,11 @@
 #include <list.h>
 #include <stdint.h>
 
+// necesario para TIMER_FREQ
+#include "devices/timer.h"
+
+
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -154,6 +159,11 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+
+// prototipo nueva ecuacion calcular load_avg
+
+int calcularLoadAVG(int loadAVG, struct thread *t);
 
 bool compare_priority(struct list_elem*,struct list_elem*,void*);
 
