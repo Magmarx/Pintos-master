@@ -5,6 +5,9 @@
 #include <list.h>
 #include <stdint.h>
 
+#include <kernel/list.h>
+#include <threads/synch.h>
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -23,8 +26,6 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
-#define LEVEL_LOCK 8
-#define FAKE_PRIORITY -1
 
 /* A kernel thread or user process.
 
@@ -95,20 +96,22 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-   // Added props
-    struct list_elem sleep_elem;
-    struct lock *lock_blocked_by;
-    struct list locks;
-    bool is_donated;
-    int old_priority;
-    int64_t wakeup_ticks;
-    
-    //Finished adding props
-
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+    
+
 #endif
+
+
+
+    struct list children_list;
+    struct list files;
+    struct file * page_exec;
+    struct semaphore load_sema;
+    struct thread * parent;
+    bool has_loaded;
+    int exit_status;
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
@@ -149,7 +152,5 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
-
-bool compare_priority(struct list_elem*,struct list_elem*,void*);
 
 #endif /* threads/thread.h */
