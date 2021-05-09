@@ -13,6 +13,10 @@
 #include "threads/vaddr.h"
 #ifdef USERPROG
 #include "userprog/process.h"
+
+// necesario para redondear numero
+#include<math.h>
+
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -525,7 +529,7 @@ thread_set_nice (int nice UNUSED)
   struct thread *hilo = thread_current();
 
   //Definimos la prioridad y ponemos en falso el argumento de donacion
-  
+
   //set_thread_priority(hilo,nice,false);
   hilo->niceValue;
 }
@@ -566,7 +570,7 @@ thread_get_recent_cpu (void)
 int calcularLoadAVG(int loadAVG,struct thread *t){
   int numero1 = 1;
   int numero59 = 59;
-  int numero60 = 60; 
+  int numero60 = 60;
 
   int divisionNumero59y60 = (numero59) / (numero60);
 
@@ -574,8 +578,35 @@ int calcularLoadAVG(int loadAVG,struct thread *t){
 
 
   int ecuacionLoadAvg =  (divisionNumero59y60) * (ecuacionLoadAvg) + ecuacionLoadAvg + (divisionNumero1y60);
+
+
+
   return ecuacionLoadAvg;
 }
+
+int calcularPrioridad(int nice,int recentCPU){
+
+  // obtenemos valor de nice agradable
+  int getValueNice = thread_get_nice();
+
+  // estos calculos son de la ecuacion dada riority = PRI_MAX - (recent_cpu / 4) - (nice * 2)
+  int division = (recentCPU) / 4;
+  int multiplicacion = getValueNice * 2;
+  struct thread * t = thred_current();
+  ASSERT (t != NULL);
+  //ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
+  int prioridad = t->priority;
+
+  int prioridadEcuacion = 0;
+
+  if  ((prioridad>=PRI_MIN) && (prioridad<=PRI_MAX)){
+    prioridadEcuacion = PRI_MAX - (division) - (multiplicacion);
+  }
+
+  return round(prioridadEcuacion);
+
+}
+
 
 
 /* Idle thread.  Executes when no other thread is ready to run.
