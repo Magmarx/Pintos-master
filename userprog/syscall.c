@@ -18,3 +18,30 @@ syscall_handler (struct intr_frame *f UNUSED)
   printf ("system call!\n");
   thread_exit ();
 }
+
+/* remove a specific child process */
+void
+remove_child_process (struct child_process *cp)
+{
+  list_remove(&cp->elem);
+  free(cp);
+}
+
+/* find a child process based on pid */
+struct child_process* find_child_process(int pid)
+{
+  struct thread *t = thread_current();
+  struct list_elem *e;
+  struct list_elem *next;
+  
+  for (e = list_begin(&t->child_list); e != list_end(&t->child_list); e = next)
+  {
+    next = list_next(e);
+    struct child_process *cp = list_entry(e, struct child_process, elem);
+    if (pid == cp->pid)
+    {
+      return cp;
+    }
+  }
+  return NULL;
+}

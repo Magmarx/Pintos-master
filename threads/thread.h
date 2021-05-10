@@ -5,9 +5,8 @@
 #include <list.h>
 #include <stdint.h>
 
-#include <kernel/list.h>
-#include <threads/synch.h>
-
+#include "userprog/syscall.h"
+	
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -103,9 +102,12 @@ struct thread
 
 #endif
 
+   struct file* executable;
+   struct child_process* cp;
+   struct list child_list;     // list of child processes
 
 
-    struct list children_list;
+
     struct list files;
     struct file * page_exec;
     struct semaphore load_sema;
@@ -152,5 +154,7 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+struct child_process* add_child_process (int pid);
 
 #endif /* threads/thread.h */

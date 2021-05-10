@@ -175,6 +175,8 @@ thread_create (const char *name, int priority,
   struct switch_threads_frame *sf;
   tid_t tid;
 
+  enum intr_level old_level;
+
   ASSERT (function != NULL);
 
   /* Allocate thread. */
@@ -185,6 +187,11 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
+
+  /* Prepare thread for first run by initializing its stack.
+	     Do this atomically so intermediate values for the 'stack' 
+	     member cannot be observed. */
+	old_level = intr_disable ();
 
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
@@ -201,13 +208,20 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+  intr_set_level (old_level);
+	
+	// add the child process to a child list
+	t->parent = thread_tid();
+	struct child_process *cp = add_child_process(t->tid);
+	t->cp = cp;
+
 
   /* Add to run queue. */
   thread_unblock (t);
 
-  #ifdef USERPROG
-    t->parent = thread_current ();
-  #endif
+  // #ifdef USERPROG
+  //   t->parent = thread_current ();
+  // #endif
 
   return tid;
 }
@@ -462,7 +476,7 @@ is_thread (struct thread *t)
 static void
 init_thread (struct thread *t, const char *name, int priority)
 {
-  enum intr_level old_level;
+  // enum intr_level old_level;
 
   ASSERT (t != NULL);
   ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
@@ -475,9 +489,16 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
 
-  old_level = intr_disable ();
+  // old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
-  intr_set_level (old_level);
+  // intr_set_level (old_level);
+
+  //new props init 
+  list_init(&t->child_list);
+  t->cp = NULL;
+  t->executable = NULL;
+  t->parent = -1;
+
 
 
   sema_init(&t->load_sema, 0);
@@ -596,3 +617,20 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+// Custom functions
+
+/* add a new child process to list */
+struct child_process* add_child_process (int pid)
+{
+  struct child_process *cp = malloc(sizeof(struct child_process));
+  cp->pid = pid;
+  cp->load_status = NOT_LOADED;
+  cp->wait = 0; // false
+  cp->exit = 0; // false
+  sema_init(&cp->load_sema, 0);
+  sema_init(&cp->exit_sema, 0);
+  list_push_back(&thread_current()->child_list, &cp->elem);
+  
+  return cp;
+}
