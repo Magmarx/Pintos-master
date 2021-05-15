@@ -110,7 +110,29 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+  // First we get the child process we want to put in wait
+  struct child_process* child_process_ptr = find_child_process(child_tid);
+  // If we dont have an active child process we throw an error
+  if (!child_process_ptr)
+  {
+    return ERROR;
+  }
+  
+  // If the child process is already waiting we throw an error 
+  if (child_process_ptr->wait)
+  {
+    return ERROR;
+  }
+  // set wait for child to true
+  child_process_ptr->wait = 1; 
+  while (!child_process_ptr->exit)
+  {
+    asm volatile ("" : : : "memory");
+  }
+  int status = child_process_ptr->status;
+  // Then we remove all the child processes
+  remove_child_process(child_process_ptr);
+  return status;
 }
 
 /* Free the current process's resources. */
@@ -119,7 +141,34 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+  
+  // From here 
+  lock_acquire(&file_system_lock);
 
+  // First after we acquiere the lock we close the file
+  process_close_file(CLOSE_ALL_FD);
+  /* Then we check if the current thread is executable if not we close it */
+  if (cur->executable) {
+    /* Comes from file.h */
+    file_close(cur->executable);
+  }
+
+  lock_release(&file_system_lock);
+  
+  /* 
+  Free all of the cild processes
+  in the list.
+  */
+  remove_all_child_processes();
+  
+  if (is_thread_alive(cur->parent))
+  {
+    cur->cp->exit = 1;
+    sema_up(&cur->cp->exit_sema);
+  }
+
+  // To here 
+  
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
@@ -251,6 +300,10 @@ load (const char *file_name, void (**eip) (void), void **esp, char **saveptr)
       goto done; 
     }
 
+  /* Cause we have executable files we want to deny the write */
+  file_deny_write(file);
+  t->executable = file;
+
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)
@@ -334,7 +387,7 @@ load (const char *file_name, void (**eip) (void), void **esp, char **saveptr)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
+  /* file_close (file); Removing file close cause it never loads here*/
   return success;
 }
 

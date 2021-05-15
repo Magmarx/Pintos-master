@@ -12,6 +12,12 @@ void syscall_init (void);
 #define CLOSE_ALL_FD -1
 #define USER_VADDR_BOTTOM ((void *) 0x08048000)
 
+struct process_file {
+    struct file *file;
+    int fd;
+    struct list_elem elem;
+};
+
 struct child_process {
   int pid;
   int load_status;
@@ -23,7 +29,12 @@ struct child_process {
   struct list_elem elem;
 };
 
+struct lock file_system_lock;
+
 struct child_process* find_child_process (int pid);
 void remove_child_process (struct child_process *child);
+void remove_all_child_processes (void);
+
+void process_close_file (int file_descriptor);
 
 #endif /* userprog/syscall.h */
