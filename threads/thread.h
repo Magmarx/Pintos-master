@@ -102,11 +102,14 @@ struct thread
 
 #endif
 
-   struct file* executable;
-   struct child_process* cp;
-   struct list child_list;     // list of child processes
+    struct file* executable;
+    struct child_process* cp;
+    struct list child_list;     // list of child processes
 
 
+    //Syscall props
+    struct list file_list;      // list of files
+    int fd;                     // file descriptor
 
     struct list files;
     struct file * page_exec;
@@ -156,5 +159,6 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 struct child_process* add_child_process (int pid);
+int is_thread_alive (int pid);
 
 #endif /* threads/thread.h */

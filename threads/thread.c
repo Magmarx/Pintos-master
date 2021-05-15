@@ -103,6 +103,25 @@ thread_init (void)
   initial_thread->tid = allocate_tid ();
 }
 
+/*
+  We here go throught every thread in the list and check if they are alive
+*/
+int is_thread_alive (int pid){
+  struct list_elem *e;
+  struct list_elem *next;
+  for (e = list_begin(&all_list); e != list_end(&all_list); e = next)
+  {
+    next = list_next(e);
+    struct thread *t = list_entry (e, struct thread, allelem);
+    if (t->tid == pid)
+    {
+      // pid matches return true
+      return 1;
+    }
+  }
+  return 0; // no tid matches then thread is no longer alive
+}
+
 /* Starts preemptive thread scheduling by enabling interrupts.
    Also creates the idle thread. */
 void
@@ -494,6 +513,7 @@ init_thread (struct thread *t, const char *name, int priority)
   // intr_set_level (old_level);
 
   //new props init 
+  list_init(&t->file_list);
   list_init(&t->child_list);
   t->cp = NULL;
   t->executable = NULL;
