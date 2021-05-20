@@ -33,6 +33,10 @@ Desplazamiento a la izquierda
 */
 #define mediaFraccionFija (2<<13)
 
+#define INT2FIXED(n) ((n)*fraccionFija)
+
+
+
 
 #else
 

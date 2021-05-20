@@ -166,8 +166,7 @@ int thread_get_load_avg (void);
 int calcularLoadAVG(int loadAVG, struct thread *t);
 
 // Prototipo nuevo para ecuacion de calcular prioridad
-int calcularPrioridad(int nice,int recentCPU);
-
+void calcularPrioridad(struct thread* hilo,void * aux);
 
 
 bool compare_priority(struct list_elem*,struct list_elem*,void*);

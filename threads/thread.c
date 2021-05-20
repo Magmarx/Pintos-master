@@ -11,6 +11,9 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+
+#include "threads/aritmetica.h"
+
 #ifdef USERPROG
 #include "userprog/process.h"
 
@@ -535,7 +538,7 @@ thread_set_nice (int nice UNUSED)
   //Definimos la prioridad y ponemos en falso el argumento de donacion
 
   //set_thread_priority(hilo,nice,false);
-  hilo->niceValue;
+  hilo->niceValue=nice;
 }
 
 /* Returns the current thread's nice value. */
@@ -571,7 +574,7 @@ thread_get_recent_cpu (void)
 
 
 // promedio carga del sistema, estima el numero promedio de subprocesos listos para ejecutarse durante el ultimo minuto, load_Avg es para todo el sistema
-int calcularLoadAVG(int loadAVG,struct thread *t){
+/*int calcularLoadAVG(int loadAVG,struct thread *t){
   int numero1 = 1;
   int numero59 = 59;
   int numero60 = 60;
@@ -586,30 +589,44 @@ int calcularLoadAVG(int loadAVG,struct thread *t){
 
 
   return ecuacionLoadAvg;
-}
+}*/
 
-/*int calcularPrioridad(int nice,int recentCPU){
+/* EL planificador tiene 64 prioridades, o 64 colas listas
+
+  La prioridad 0 es la más baja y la prioridad 63 es la más alta.
+*/
+void calcularPrioridad(struct thread* hilo,void*  aux){
+
+  // Apunta un hilo valido
+  ASSERT(is_thread(hilo));
 
   // obtenemos valor de nice agradable
   int getValueNice = thread_get_nice();
 
   // estos calculos son de la ecuacion dada riority = PRI_MAX - (recent_cpu / 4) - (nice * 2)
-  int division = (recentCPU) / 4;
+  //int division = (hilo->recent_cpu) / 4;
   int multiplicacion = getValueNice * 2;
-  struct thread * t = thred_current();
-  ASSERT (t != NULL);
-  //ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
-  int prioridad = t->priority;
+  
+  // recent cpu, es una estimacion del tiempo de cpu que el hilo ha utilizado recientemente
 
-  int prioridadEcuacion = 0;
+  if (hilo!=idle_thread)
+  {
+    /* code */
+    //Cada cuarto del reloj se vuelve a calcular
+    // priority = PRIMAX - (recentCpu / 4) - (nice*2)
 
-  if  ((prioridad>=PRI_MIN) && (prioridad<=PRI_MAX)){
-    prioridadEcuacion = PRI_MAX - (division) - (multiplicacion);
+    hilo->priority = PRI_MAX  - (multiplicacion);
+
   }
 
-  //dddddreturn round(prioridadEcuacion);
+  //prioridd mas baja
+  if (hilo->priority <PRI_MIN)
+  {
+    /* code */
+   hilo->priority = PRI_MIN;
+  }
 
-}*/
+}
 
 
 
