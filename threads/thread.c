@@ -262,6 +262,10 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+
+  if (thread_mlfqs==true){
+
+  }
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -584,7 +588,7 @@ int calcularLoadAVG(int loadAVG,struct thread *t){
   return ecuacionLoadAvg;
 }
 
-int calcularPrioridad(int nice,int recentCPU){
+/*int calcularPrioridad(int nice,int recentCPU){
 
   // obtenemos valor de nice agradable
   int getValueNice = thread_get_nice();
@@ -603,9 +607,9 @@ int calcularPrioridad(int nice,int recentCPU){
     prioridadEcuacion = PRI_MAX - (division) - (multiplicacion);
   }
 
-  return round(prioridadEcuacion);
+  //dddddreturn round(prioridadEcuacion);
 
-}
+}*/
 
 
 
