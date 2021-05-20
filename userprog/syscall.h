@@ -31,10 +31,15 @@ struct child_process {
 
 struct lock file_system_lock;
 
+/******** syscall ***********/
+void syscall_exit (int status);
+
+/******** Child process **********/
 struct child_process* find_child_process (int pid);
 void remove_child_process (struct child_process *child);
 void remove_all_child_processes (void);
 
+/******** Files **********/
 void process_close_file (int file_descriptor);
 
 #endif /* userprog/syscall.h */

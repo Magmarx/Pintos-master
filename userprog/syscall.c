@@ -6,6 +6,8 @@
 
 static void syscall_handler (struct intr_frame *);
 
+/************ Syscall **************/
+
 void
 syscall_init (void) 
 {
@@ -18,6 +20,29 @@ syscall_handler (struct intr_frame *f UNUSED)
   printf ("system call!\n");
   thread_exit ();
 }
+
+
+/*
+  This function checks if the exiting thread is the current thread
+  If true we update the parent status
+*/
+void
+syscall_exit (int status)
+{
+  struct thread *cur = thread_current();
+  if (is_thread_alive(cur->parent) && cur->cp)
+  {
+    if (status < 0)
+    {
+      status = -1;
+    }
+    cur->cp->status = status;
+  }
+  printf("Exiting thread %s: exit(%d)\n", cur->name, status);
+  thread_exit();
+}
+
+/************ Files **************/
 
 /* close the desired file descriptor */
 void
@@ -45,6 +70,8 @@ process_close_file (int file_descriptor)
     }
   }
 }
+
+/************ Child Process **************/
 
 /* Remove all the child processes in a thread */
 void remove_all_child_processes (void) 
