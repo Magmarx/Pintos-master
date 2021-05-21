@@ -584,7 +584,7 @@ void calcularLoadAVG(int loadAVG,struct thread *t){
 
 
   // load avg = 59/60 * load avg + (1/60) *ready threads
-  int ecuacionLoadAvg =  multiplicacionFraccion(divisionFraccion(numero59,numero60),(ecuacionLoadAvg)) + ecuacionLoadAvg + (divisionNumero1y60);
+  int ecuacionLoadAvg =  sumaFraccion(multiplicacionFraccion(divisionFraccion(numero59,numero60),(ecuacionLoadAvg)),divisionFraccion(1,60));
 
 
 
