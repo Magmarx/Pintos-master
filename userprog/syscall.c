@@ -1,9 +1,29 @@
 #include "userprog/syscall.h"
+#include <user/syscall.h>
+
 #include <stdio.h>
 #include <syscall-nr.h>
+
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/synch.h"
+#include "userprog/pagedir.h"
+#include "threads/vaddr.h"
+#include "userprog/process.h"
 
+/********* Global Vars **********/
+#define MAX_ARGS 3
+
+bool FILE_LOCK_INIT = false;
+
+/********* Function Declaration ********/
+//args
+void get_args (struct intr_frame *f, int *arg, int num_of_args);
+
+//pointers
+void validate_ptr (const void* vaddr);
+
+//syscall
 static void syscall_handler (struct intr_frame *);
 
 /************ Syscall **************/
@@ -17,8 +37,28 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-  printf ("system call!\n");
-  thread_exit ();
+  if (!FILE_LOCK_INIT) {
+    lock_init(&file_system_lock);
+    FILE_LOCK_INIT = true;
+  }
+  
+  int arg[MAX_ARGS];
+  int esp = getpage_ptr((const void *) f->esp);
+
+  switch (* (int *)esp) {
+    case SYS_EXIT:
+      // First we fill all the args with the amound it needs
+      get_args(f, &arg[0], 1);
+      syscall_exit(arg[0]);
+      break;
+    case SYS_WAIT:
+      // fill arg with the amount of arguments needed
+      get_args(f, &arg[0], 1);
+      f->eax = syscall_wait(arg[0]);
+      break;
+    default:
+      break;
+  }
 }
 
 
@@ -30,16 +70,69 @@ void
 syscall_exit (int status)
 {
   struct thread *cur = thread_current();
-  if (is_thread_alive(cur->parent) && cur->cp)
-  {
-    if (status < 0)
-    {
+
+  if (is_thread_alive(cur->parent) && cur->cp) {
+    if (status < 0) {
       status = -1;
     }
     cur->cp->status = status;
   }
-  printf("Exiting thread %s: exit(%d)\n", cur->name, status);
+
+  printf("%s: exit(%d)\n", cur->name, status);
   thread_exit();
+}
+
+/*
+  Here we make the syscall wait
+*/
+int
+syscall_wait(pid_t pid)
+{
+  return process_wait(pid);
+}
+
+/************ Pages **************/
+
+/*
+  This function gets the pointer to the active page from the thread
+*/
+int
+getpage_ptr(const void *vaddr)
+{
+  void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
+  if (!ptr) {
+    syscall_exit(ERROR);
+  }
+  return (int)ptr;
+}
+
+/************ args **************/
+
+void
+get_args (struct intr_frame *f, int *args, int num_of_args)
+{
+  int i;
+  int *ptr;
+
+  for (i = 0; i < num_of_args; i++) {
+    ptr = (int *) f->esp + i + 1;
+    validate_ptr((const void *) ptr);
+    args[i] = *ptr;
+  }
+}
+
+/************ pointers ***********/
+
+/*
+  This function validates the pointer 
+*/
+void
+validate_ptr (const void *vaddr)
+{
+    if (vaddr < USER_VADDR_BOTTOM || !is_user_vaddr(vaddr)) {
+      // Err: out of bound memory access
+      syscall_exit(ERROR);
+    }
 }
 
 /************ Files **************/

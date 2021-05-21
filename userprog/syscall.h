@@ -42,4 +42,7 @@ void remove_all_child_processes (void);
 /******** Files **********/
 void process_close_file (int file_descriptor);
 
+/******** Pages *********/
+int getpage_ptr (const void *vaddr);
+
 #endif /* userprog/syscall.h */
