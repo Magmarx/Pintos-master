@@ -116,6 +116,7 @@ struct thread
 
     // Mlfqs
     int niceValue;
+    int recent_cpu;
 
 
 #ifdef USERPROG
@@ -169,10 +170,10 @@ int thread_get_load_avg (void);
 
 // prototipo nueva ecuacion calcular load_avg
 
-void calcularLoadAVG(int loadAVG, struct thread *t);
+void calcularLoadAVG(struct thread *hilo);
 
 // Prototipo nuevo para ecuacion de calcular prioridad
-void calcularPrioridad(struct thread* hilo,void * aux);
+void calcularPrioridad(struct thread* hilo);
 
 
 bool compare_priority(struct list_elem*,struct list_elem*,void*);

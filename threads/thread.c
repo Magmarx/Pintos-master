@@ -23,6 +23,8 @@
 // necesario para redondear numero
 #include<math.h>
 
+int loadAVG;
+
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -50,6 +52,7 @@ static struct thread *initial_thread;
 
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
+int loadAVG;
 
 /* Stack frame for kernel_thread(). */
 struct kernel_thread_frame
@@ -305,6 +308,21 @@ thread_tick (void)
   else
     kernel_ticks++;
 
+  if (thread_mlfqs)
+  {
+    /* code */
+    if (strcmp(t->name,"idle")!=0)
+    {
+      /* code */
+      t->recent_cpu = sumaFraccion(t->recent_cpu,1);
+    }
+    calcularLoadAVG(t);
+
+    calcularPrioridad(t);
+
+  }
+
+
   thread_set_next_wakeup();
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -553,13 +571,9 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void)
 {
-  //debe actualizarse cuando el contador de ticks del sistema alcance un multiplo de un segundo
-  if (timer_ticks()%TIMER_FREQ)
-  {
-    /* code */
-  }
+
   /* Not yet implemented. */
-  return 0;
+  return redondeo(multiplicar(loadAVG,100));
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -572,19 +586,25 @@ thread_get_recent_cpu (void)
 
 
 // promedio carga del sistema, estima el numero promedio de subprocesos listos para ejecutarse durante el ultimo minuto, load_Avg es para todo el sistema
-void calcularLoadAVG(int loadAVG,struct thread *t){
-  int numero1 = 1;
+void calcularLoadAVG(struct thread *hilo){
+  //int numero1 = 1;
   int numero59 = 59;
   int numero60 = 60;
 
   //int divisionNumero59y60 = (numero59) / (numero60);
 
-  int divisionNumero1y60 = (numero1) / (numero60);
+  //int divisionNumero1y60 = (numero1) / (numero60);
+  hilo = thread_current();
+  //debe actualizarse cuando el contador de ticks del sistema alcance un multiplo de un segundo
+  if (timer_ticks()%TIMER_FREQ ==0)
+  {
+    /* code */
+      // load avg = 59/60 * load avg + (1/60) *ready threads
 
+      int ecuacionLoadAvg =  sumaFraccion(multiplicacionFraccion(divisionFraccion(numero59,numero60),(ecuacionLoadAvg)),multiplicacionFraccion(divisionFraccion(1,60),hilo));
 
+  }
 
-  // load avg = 59/60 * load avg + (1/60) *ready threads
-  int ecuacionLoadAvg =  sumaFraccion(multiplicacionFraccion(divisionFraccion(numero59,numero60),(ecuacionLoadAvg)),divisionFraccion(1,60));
 
 
 
@@ -594,7 +614,7 @@ void calcularLoadAVG(int loadAVG,struct thread *t){
 
   La prioridad 0 es la más baja y la prioridad 63 es la más alta.
 */
-void calcularPrioridad(struct thread* hilo,void*  aux){
+void calcularPrioridad(struct thread* hilo){
 
   // Apunta un hilo valido
   ASSERT(is_thread(hilo));
@@ -602,9 +622,7 @@ void calcularPrioridad(struct thread* hilo,void*  aux){
   // obtenemos valor de nice agradable
   int getValueNice = thread_get_nice();
 
-  // estos calculos son de la ecuacion dada riority = PRI_MAX - (recent_cpu / 4) - (nice * 2)
-  int multiplicacion = getValueNice * 2;
-  
+  // estos calculos son de la ecuacion dada riority = PRI_MAX - (recent_cpu / 4) - (nice * 2)  
   // recent cpu, es una estimacion del tiempo de cpu que el hilo ha utilizado recientemente
 
   if (hilo!=idle_thread)
@@ -612,7 +630,7 @@ void calcularPrioridad(struct thread* hilo,void*  aux){
     /* code */
     //Cada cuarto del reloj se vuelve a calcular
     // priority = PRIMAX - (recentCpu / 4) - (nice*2)
-   hilo->priority = PRI_MAX  - multiplicacion -(hilo->niceValue * 2);
+   hilo->priority = PRI_MAX  - divisionFraccion(hilo->recent_cpu,4) - multiplicacionFraccion(getValueNice, 2);
 
   }
 

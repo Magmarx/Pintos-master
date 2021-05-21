@@ -22,3 +22,6 @@ int multiplicacionFraccion(int numberOne,int numberTwo);
 
 
 int sumaFraccion(int x, int n);
+
+// ecuacio planteada para convert x to inteer rounding to nearest
+int redondeo(int x);
