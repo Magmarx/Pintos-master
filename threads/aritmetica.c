@@ -3,8 +3,10 @@
 #include "aritmetica.h"
 
 
-// calculos planteados en web.stanford.edu
+/* calculos planteados en web.stanford.edu
 
+		4.4 BSD Scheduler
+*/
 
 /*
 
@@ -57,8 +59,17 @@ int divisionFraccion(int numberOne,int numberTwo){
 	return ((int64_t) numberOne) * corrimientoIzquierda / numberTwo;
 }
 
+
+
+int multiplicacionFraccion(int numberOne,int numberTwo){
+
+	
+	return ((int64_t) numberOne) * numberTwo / corrimientoIzquierda;
+}
 int convertToFixedPoint(int n){
 	return n*corrimientoIzquierda;
 }
+
+
 
 
