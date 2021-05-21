@@ -3,6 +3,8 @@
 #include "aritmetica.h"
 
 
+// calculos planteados en web.stanford.edu
+
 
 /*
 
@@ -35,7 +37,19 @@ int division(int numberOne,int numberTwo){
 	return result;
 }
 
+//add x and y
+int suma(int numberOne,int numberTwo){
 
+	int result = numberTwo + numberOne;
+	return result;
+}
+
+// resta y de x
+int resta(int numberOne,int numberTwo){
+
+	int result = numberOne - numberTwo;
+	return result;
+}
 
 int divisionFraccion(int numberOne,int numberTwo){
 
@@ -43,5 +57,8 @@ int divisionFraccion(int numberOne,int numberTwo){
 	return ((int64_t) numberOne) * corrimientoIzquierda / numberTwo;
 }
 
+int convertToFixedPoint(int n){
+	return n*corrimientoIzquierda;
+}
 
 
