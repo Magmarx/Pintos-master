@@ -73,3 +73,6 @@ int convertToFixedPoint(int n){
 
 
 
+int sumaFraccion(int x, int n){
+	return (x+n * corrimientoIzquierda);
+}
