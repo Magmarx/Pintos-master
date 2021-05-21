@@ -4,6 +4,8 @@
 #include <random.h>
 #include <stdio.h>
 #include <string.h>
+#include "threads/aritmetica.c"
+
 #include "threads/flags.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
@@ -12,7 +14,8 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 
-#include "threads/aritmetica.h"
+// list entry, etc necesarios
+#include "devices/timer.h"
 
 #ifdef USERPROG
 #include "userprog/process.h"
@@ -266,9 +269,6 @@ thread_init (void)
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 
-  if (thread_mlfqs==true){
-
-  }
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -519,6 +519,7 @@ thread_set_priority (int new_priority)
   struct thread *cur = thread_current ();
   // Definimos la prioridad y ponemos en falso el argumento de donacion
   set_thread_priority (cur, new_priority, false);
+
 }
 
 /* Returns the current thread's priority. */
@@ -539,6 +540,24 @@ thread_set_nice (int nice UNUSED)
 
   //set_thread_priority(hilo,nice,false);
   hilo->niceValue=nice;
+
+  calcularPrioridad(nice,NULL);
+
+  if (hilo!=idle_thread)
+  {
+    /* code */
+
+    if (list_entry(list_begin(&ready_list),struct thread,elem)->priority>hilo->priority)
+    {
+      /* code */
+
+      enum intr_level o;
+      thread_yield();
+
+      intr_set_level(o);
+    }
+  }
+
 }
 
 /* Returns the current thread's nice value. */
@@ -604,7 +623,6 @@ void calcularPrioridad(struct thread* hilo,void*  aux){
   int getValueNice = thread_get_nice();
 
   // estos calculos son de la ecuacion dada riority = PRI_MAX - (recent_cpu / 4) - (nice * 2)
-  //int division = (hilo->recent_cpu) / 4;
   int multiplicacion = getValueNice * 2;
   
   // recent cpu, es una estimacion del tiempo de cpu que el hilo ha utilizado recientemente
@@ -614,8 +632,7 @@ void calcularPrioridad(struct thread* hilo,void*  aux){
     /* code */
     //Cada cuarto del reloj se vuelve a calcular
     // priority = PRIMAX - (recentCpu / 4) - (nice*2)
-
-    hilo->priority = PRI_MAX  - (multiplicacion);
+   hilo->priority = PRI_MAX  - multiplicacion -(hilo->niceValue * 2);
 
   }
 
@@ -624,6 +641,8 @@ void calcularPrioridad(struct thread* hilo,void*  aux){
   {
     /* code */
    hilo->priority = PRI_MIN;
+  }else if(hilo->priority>PRI_MAX){
+    hilo->priority = PRI_MAX;
   }
 
 }

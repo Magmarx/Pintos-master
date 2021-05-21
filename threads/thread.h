@@ -9,7 +9,6 @@
 #include "devices/timer.h"
 
 
-
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -30,6 +29,9 @@ typedef int tid_t;
 #define PRI_MAX 63                      /* Highest priority. */
 #define LEVEL_LOCK 8
 #define FAKE_PRIORITY -1
+
+
+
 
 /* A kernel thread or user process.
 
@@ -111,6 +113,7 @@ struct thread
     //Finished adding props
 
 
+
     // Mlfqs
     int niceValue;
 
@@ -120,8 +123,11 @@ struct thread
     uint32_t *pagedir;                  /* Page directory. */
 #endif
 
+
     /* Owned by thread.c. */
-    unsigned magic;                     /* Detects stack overflow. */
+    unsigned magic;  
+
+
   };
 
 /* If false (default), use round-robin scheduler.
