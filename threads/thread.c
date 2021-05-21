@@ -534,29 +534,8 @@ thread_get_priority (void)
 void
 thread_set_nice (int nice UNUSED)
 {
-  struct thread *hilo = thread_current();
-
-  //Definimos la prioridad y ponemos en falso el argumento de donacion
-
-  //set_thread_priority(hilo,nice,false);
-  hilo->niceValue=nice;
-
-  calcularPrioridad(nice,NULL);
-
-  if (hilo!=idle_thread)
-  {
-    /* code */
-
-    if (list_entry(list_begin(&ready_list),struct thread,elem)->priority>hilo->priority)
-    {
-      /* code */
-
-      enum intr_level o;
-      thread_yield();
-
-      intr_set_level(o);
-    }
-  }
+  struct thread *hilo = thread_current ();
+  hilo-> niceValue = nice;
 
 }
 
@@ -593,7 +572,7 @@ thread_get_recent_cpu (void)
 
 
 // promedio carga del sistema, estima el numero promedio de subprocesos listos para ejecutarse durante el ultimo minuto, load_Avg es para todo el sistema
-/*int calcularLoadAVG(int loadAVG,struct thread *t){
+void calcularLoadAVG(int loadAVG,struct thread *t){
   int numero1 = 1;
   int numero59 = 59;
   int numero60 = 60;
@@ -606,9 +585,7 @@ thread_get_recent_cpu (void)
   int ecuacionLoadAvg =  (divisionNumero59y60) * (ecuacionLoadAvg) + ecuacionLoadAvg + (divisionNumero1y60);
 
 
-
-  return ecuacionLoadAvg;
-}*/
+}
 
 /* EL planificador tiene 64 prioridades, o 64 colas listas
 

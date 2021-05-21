@@ -169,7 +169,7 @@ int thread_get_load_avg (void);
 
 // prototipo nueva ecuacion calcular load_avg
 
-int calcularLoadAVG(int loadAVG, struct thread *t);
+void calcularLoadAVG(int loadAVG, struct thread *t);
 
 // Prototipo nuevo para ecuacion de calcular prioridad
 void calcularPrioridad(struct thread* hilo,void * aux);
