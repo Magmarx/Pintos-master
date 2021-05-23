@@ -122,6 +122,24 @@ int is_thread_alive (int pid){
   return 0; // no tid matches then thread is no longer alive
 }
 
+	
+/* Releases all the locks that the thread has */
+void
+thread_release_locks (void)
+{
+  struct thread *t = thread_current();
+  struct list_elem *e;
+  struct list_elem *next;
+  
+  // iterate in all the locks in the thread list
+  for (e = list_begin(&t->lock_list); e != list_end(&t->lock_list); e = next) {
+    next = list_next(e);
+    struct lock *lock_ptr = list_entry (e, struct lock, elem);
+    lock_release(lock_ptr);
+    list_remove(&lock_ptr->elem);
+  }
+}
+
 /* Starts preemptive thread scheduling by enabling interrupts.
    Also creates the idle thread. */
 void
@@ -323,8 +341,8 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
-  struct thread *curr = thread_current();
-  sema_up(&curr->parent->load_sema);
+  // struct thread *curr = thread_current();
+  // sema_up(&curr->parent->load_sema);
 
 #ifdef USERPROG
   process_exit ();
@@ -334,6 +352,8 @@ thread_exit (void)
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
   intr_disable ();
+  // release the locks thread holds
+	thread_release_locks();
   list_remove (&thread_current()->allelem);
   thread_current ()->status = THREAD_DYING;
   schedule ();
@@ -515,13 +535,15 @@ init_thread (struct thread *t, const char *name, int priority)
   //new props init 
   list_init(&t->file_list);
   list_init(&t->child_list);
+  list_init(&t->lock_list);
   t->cp = NULL;
   t->executable = NULL;
   t->parent = -1;
+  t->fd = 2; 
 
 
 
-  sema_init(&t->load_sema, 0);
+  // sema_init(&t->load_sema, 0);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

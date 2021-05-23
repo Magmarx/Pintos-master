@@ -102,21 +102,23 @@ struct thread
 
 #endif
 
-    struct file* executable;
-    struct child_process* cp;
-    struct list child_list;     // list of child processes
+    struct file* executable; // 1
+    struct child_process* cp; // 1
+    struct list child_list;     // list of child processes 1
+    struct list lock_list;      // use to keep track of locks the thread holds 1
 
 
     //Syscall props
-    struct list file_list;      // list of files
-    int fd;                     // file descriptor
+    struct list file_list;      // list of files 1
+    int fd;                     // file descriptor 1
 
-    struct list files;
-    struct file * page_exec;
-    struct semaphore load_sema;
-    struct thread * parent;
-    bool has_loaded;
-    int exit_status;
+   //  struct list files;
+   //  struct file * page_exec;
+   //  struct semaphore load_sema;
+   //  struct thread * parent;
+    tid_t parent; // Parent id
+   //  bool has_loaded;
+   //  int exit_status;
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
