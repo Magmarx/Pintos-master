@@ -41,6 +41,7 @@ void remove_all_child_processes (void);
 
 /******** Files **********/
 void process_close_file (int file_descriptor);
+struct file* get_file(int filedes);
 
 /******** Pages *********/
 int getpage_ptr (const void *vaddr);
