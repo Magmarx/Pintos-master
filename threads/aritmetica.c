@@ -89,6 +89,8 @@ int sumaFraccion(int x, int n){
 	return x+(n * corrimientoIzquierda);
 }
 
+
+// convert x to integer, rounding to nearest
 int redondeo(int x){
 	if (x<=0)
 	{

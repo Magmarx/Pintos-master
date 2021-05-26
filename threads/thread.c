@@ -580,8 +580,17 @@ thread_get_load_avg (void)
 int
 thread_get_recent_cpu (void)
 {
+  int limite = 100;
+
+  struct thread *cur = thread_current();
+
   /* Not yet implemented. */
-  return 0;
+
+  /*Pintos: stanford
+  Return 100 times the current thread's recent_cpu value, rounded
+  to the nearest integer
+  */
+  return redondeo( multiplicar(limite,cur->recent_cpu));
 }
 
 
