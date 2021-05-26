@@ -587,22 +587,25 @@ thread_get_recent_cpu (void)
 
 // promedio carga del sistema, estima el numero promedio de subprocesos listos para ejecutarse durante el ultimo minuto, load_Avg es para todo el sistema
 void calcularLoadAVG(struct thread *hilo){
-  //int numero1 = 1;
   int numero59 = 59;
   int numero60 = 60;
 
-  //int divisionNumero59y60 = (numero59) / (numero60);
 
-  //int divisionNumero1y60 = (numero1) / (numero60);
   hilo = thread_current();
   //debe actualizarse cuando el contador de ticks del sistema alcance un multiplo de un segundo
   if (timer_ticks()%TIMER_FREQ ==0)
   {
     /* code */
-      // load avg = 59/60 * load avg + (1/60) *ready threads
+    //int variableT = i=0;
+    //struct list_elem *e;
 
-      int ecuacionLoadAvg =  sumaFraccion(multiplicacionFraccion(divisionFraccion(numero59,numero60),(ecuacionLoadAvg)),multiplicacionFraccion(divisionFraccion(1,60),hilo));
+    /* load avg = 59/60 * load avg + (1/60) *ready threads
+      Devuelve la suma de todo,
+    */
 
+    loadAVG =  suma(multiplicacionFraccion(divisionFraccion(numero59,numero60),(loadAVG)),multiplicacionFraccion(divisionFraccion(1,60),hilo));
+
+    //variableT = 
   }
 
 

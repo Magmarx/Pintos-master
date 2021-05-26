@@ -26,13 +26,15 @@
 #define corrimientoIzquierda 1<<14
 
 // Implementacion de prototipos establecidos en aritmetica.h
+
+// x by n
 int multiplicar(int numberOne,int numberTwo){
 
 	int result = numberTwo * numberOne;
 	return result;
 }
 
-
+// divide x by n
 int division(int numberOne,int numberTwo){
 
 	int result = numberTwo / numberOne;
@@ -53,6 +55,7 @@ int resta(int numberOne,int numberTwo){
 	return result;
 }
 
+// divide x by y
 int divisionFraccion(int numberOne,int numberTwo){
 
 	
@@ -66,15 +69,24 @@ int multiplicacionFraccion(int numberOne,int numberTwo){
 	
 	return ((int64_t) numberOne) * numberTwo / corrimientoIzquierda;
 }
-int convertToFixedPoint(int n){
+
+// convert n to fixed point
+int convertNToFixedPoint(int n){
 	return n*corrimientoIzquierda;
+}
+
+
+//Convert x to integer (rounding toward zero)
+int convertXToInteger(int x){
+	return x / corrimientoIzquierda;
 }
 
 
 
 
+// add x and n
 int sumaFraccion(int x, int n){
-	return (x+n * corrimientoIzquierda);
+	return x+(n * corrimientoIzquierda);
 }
 
 int redondeo(int x){
