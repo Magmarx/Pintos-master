@@ -20,10 +20,7 @@
 #ifdef USERPROG
 #include "userprog/process.h"
 
-// necesario para redondear numero
-#include<math.h>
 
-int loadAVG;
 
 #endif
 
@@ -52,7 +49,6 @@ static struct thread *initial_thread;
 
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
-int loadAVG;
 
 /* Stack frame for kernel_thread(). */
 struct kernel_thread_frame
@@ -75,6 +71,8 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
+int loadAVG;
+
 
 static void kernel_thread (thread_func *, void *aux);
 
@@ -316,14 +314,16 @@ thread_tick (void)
       /* code */
       t->recent_cpu = sumaFraccion(t->recent_cpu,1);
     }
-    calcularLoadAVG(t);
+    calcularLoadAVG();
 
-    calcularPrioridad(t);
+    calcularPrioridad();
 
+  }else{
+    thread_set_next_wakeup();
   }
 
 
-  thread_set_next_wakeup();
+  
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
@@ -594,27 +594,39 @@ thread_get_recent_cpu (void)
 }
 
 
-// promedio carga del sistema, estima el numero promedio de subprocesos listos para ejecutarse durante el ultimo minuto, load_Avg es para todo el sistema
-void calcularLoadAVG(struct thread *hilo){
+// promedio carga del sistema, estia el numero promedio de subprocesos listos para ejecutarse durante el ultimo minuto, load_Avg es para todo el sistema
+void calcularLoadAVG(){
   int numero59 = 59;
   int numero60 = 60;
 
 
-  hilo = thread_current();
+  //hilo = thread_current();
   //debe actualizarse cuando el contador de ticks del sistema alcance un multiplo de un segundo
-  if (timer_ticks()%TIMER_FREQ ==0)
+  if (timer_ticks() % 100 ==0)
   {
     /* code */
     //int variableT = i=0;
-    //struct list_elem *e;
+    struct list_elem *e;
+    int temp;
 
     /* load avg = 59/60 * load avg + (1/60) *ready threads
       Devuelve la suma de todo,
     */
 
-    loadAVG =  suma(multiplicacionFraccion(divisionFraccion(numero59,numero60),(loadAVG)),multiplicacionFraccion(divisionFraccion(1,60),hilo));
+    //loadAVG =  suma(multiplicacionFraccion(divisionFraccion(numero59,numero60),(loadAVG)),multiplicacionFraccion(divisionFraccion(1,60),hilo));
 
+    loadAVG = suma(division(multiplicar(loadAVG,numero59),numero60), division(convertNToFixedPoint(list_size(&ready_list) + (strcmp(running_thread()->name,"idle")==0?0:1)),numero60));
     //variableT = 
+    temp = divisionFraccion(multiplicar(loadAVG,2),sumaFraccion(multiplicar(loadAVG,2),1));
+
+   for (e = list_begin(&all_list); e != list_end(&all_list);e=list_next(e))
+    {
+      /* code */
+      struct thread *thre = list_entry(e,struct thread,allelem);
+      thre->recent_cpu = sumaFraccion(multiplicacionFraccion(temp,thre->recent_cpu),thre->niceValue);
+
+    } 
+
   }
 
 
@@ -626,34 +638,31 @@ void calcularLoadAVG(struct thread *hilo){
 
   La prioridad 0 es la más baja y la prioridad 63 es la más alta.
 */
-void calcularPrioridad(struct thread* hilo){
+void calcularPrioridad(){
 
-  // Apunta un hilo valido
-  ASSERT(is_thread(hilo));
 
   // obtenemos valor de nice agradable
-  int getValueNice = thread_get_nice();
+  //int getValueNice = thread_get_nice();
 
   // estos calculos son de la ecuacion dada riority = PRI_MAX - (recent_cpu / 4) - (nice * 2)  
   // recent cpu, es una estimacion del tiempo de cpu que el hilo ha utilizado recientemente
-
-  if (hilo!=idle_thread)
+ 
+  if (timer_ticks() % 4==0)
   {
     /* code */
     //Cada cuarto del reloj se vuelve a calcular
-    // priority = PRIMAX - (recentCpu / 4) - (nice*2)
-   hilo->priority = PRI_MAX  - divisionFraccion(hilo->recent_cpu,4) - multiplicacionFraccion(getValueNice, 2);
+    struct list_elem *e;
+   for (e = list_begin(&all_list); e != list_end(&all_list);e=list_next(e))
+    {
+      /* code */
+      struct thread *thre = list_entry(e,struct thread,allelem);
+      thre-> priority = PRI_MAX - redondeo(division(thre->recent_cpu,4))-(thre->niceValue * 2);
+
+    } 
 
   }
 
-  //prioridd mas baja
-  if (hilo->priority <PRI_MIN)
-  {
-    /* code */
-   hilo->priority = PRI_MIN;
-  }else if(hilo->priority>PRI_MAX){
-    hilo->priority = PRI_MAX;
-  }
+
 
 }
 
