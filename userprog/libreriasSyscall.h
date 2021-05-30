@@ -35,3 +35,12 @@ int agregarArchivos (struct file *file_name);//file
 void validate_str (const void* str);
 void verificadorBuffer (const void* buf, unsigned byte_size);
 
+//args
+void obtenerArgumentos (struct intr_frame *f, int *arg, int num_of_args);
+//pointers
+void validarPunteros (const void* vaddr);
+//file 
+int agregarArchivos (struct file *file_name);
+// Validator 
+void validate_str (const void* str);
+void validarBuffer (const void* buf, unsigned byte_size);

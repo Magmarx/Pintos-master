@@ -16,28 +16,7 @@
 #include "userprog/libreriasSyscall.h"
 #include "userprog/corrimientosAritmeticos.h"
 
-
-/********* Global Vars **********/
-#define MAX_ARGS 3
-
 bool FILE_LOCK_INIT = false;
-
-/********* Function Declaration ********/
-//args
-void get_args (struct intr_frame *f, int *arg, int num_of_args);
-
-//pointers
-void validate_ptr (const void* vaddr);
-
-
-
-//file 
-int add_file (struct file *file_name);
-
-
-// Validator 
-void validate_str (const void* str);
-void validate_buffer (const void* buf, unsigned byte_size);
 
 
 struct lock memoriaDeLock;
@@ -70,7 +49,7 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
     case SYS_CREATE:
       // se va llenando el arreglo con la cantidad de argumentos que son necesarios 
-      get_args(f, &arg[NUMERO0], 2);
+      obtenerArgumentos(f, &arg[NUMERO0], 2);
       
       //valida si la linea del comando es valido
       validate_str((const void *)arg[NUMERO0]);
@@ -84,7 +63,7 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
     case SYS_REMOVE:
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      get_args(f, &arg[NUMERO0], 1);
+      obtenerArgumentos(f, &arg[NUMERO0], 1);
       
       /* comprobamos si la linea de comando es correcta  */
       validate_str((const void*)arg[NUMERO0]);
@@ -98,7 +77,7 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
     case SYS_OPEN:
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      get_args(f, &arg[NUMERO0], 1);
+      obtenerArgumentos(f, &arg[NUMERO0], 1);
       
       /* vamos a comprobar si la linea de comando es valida para no abrir basura que 
       pueda probocar bloqueos 
@@ -114,7 +93,7 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
     case SYS_FILESIZE:
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      get_args(f, &arg[NUMERO0], 1);
+      obtenerArgumentos(f, &arg[NUMERO0], 1);
       
       /* creamos syscall_filesize (const char *file_name) le enviamos el nombre del archcivo */
       f->eax = syscall_filesize(arg[NUMERO0]);  // obtenemos el tamanio del archivo
@@ -123,12 +102,12 @@ static void syscall_handler (struct intr_frame *f UNUSED)
     case SYS_WRITE:
       
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      get_args(f, &arg[NUMERO0], 3);
+      obtenerArgumentos(f, &arg[NUMERO0], 3);
       
       /* verificamos si el buffer es valido 
        * no queremos tener un buffer que esta fuera de nuestra memoria virtual
        */
-       validate_buffer((const void*)arg[NUMERO1], (unsigned)arg[2]);
+       validarBuffer((const void*)arg[NUMERO1], (unsigned)arg[2]);
        
      // obtenemos el puntero de pagina 
       arg[NUMERO1] = getpage_ptr((const void *)arg[NUMERO1]); 
@@ -139,7 +118,7 @@ static void syscall_handler (struct intr_frame *f UNUSED)
     
     case SYS_TELL:
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      get_args(f, &arg[NUMERO0], 1);
+      obtenerArgumentos(f, &arg[NUMERO0], 1);
       /*  creamos syscall_tell(int filedes) */
       f->eax = syscall_tell(arg[NUMERO0]);
       break;
@@ -148,13 +127,13 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
     case SYS_EXIT:
       // First we fill all the args with the amound it needs
-      get_args(f, &arg[NUMERO0], 1);
+      obtenerArgumentos(f, &arg[NUMERO0], 1);
       syscall_exit(arg[NUMERO0]);
       break;
 
     case SYS_EXEC:
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      get_args(f, &arg[NUMERO0], 1);
+      obtenerArgumentos(f, &arg[NUMERO0], 1);
       
       // verifica si la linea de comando es valida
       validate_str((const void*)arg[NUMERO0]);
@@ -168,12 +147,12 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
     case SYS_READ:
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      get_args(f, &arg[NUMERO0], 3);
+      obtenerArgumentos(f, &arg[NUMERO0], 3);
       
        /* verificamos si el buffer es valido 
        * no queremos tener un buffer que esta fuera de nuestra memoria virtual
        */
-       validate_buffer((const void*)arg[NUMERO1], (unsigned)arg[2]);
+       validarBuffer((const void*)arg[NUMERO1], (unsigned)arg[2]);
       // obtenemos el puntero de la pagina 
       arg[NUMERO1] = getpage_ptr((const void *)arg[NUMERO1]); 
       
@@ -183,21 +162,21 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
     case SYS_SEEK:
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      get_args(f, &arg[NUMERO0], 2);
+      obtenerArgumentos(f, &arg[NUMERO0], 2);
       /* creamos  syscall_seek(int filedes, unsigned new_position) */
       syscall_seek(arg[NUMERO0], (unsigned)arg[NUMERO1]);
       break;
 
     case SYS_WAIT:
       // fill arg with the amount of arguments needed
-      //get_args(f, &arg[NUMERO0], 1);
+      //obtenerArgumentos(f, &arg[NUMERO0], 1);
       // process.c
       f->eax = process_wait(arg[NUMERO0]);
       break;
 
     case SYS_CLOSE:
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      get_args (f, &arg[NUMERO0], 1);
+      obtenerArgumentos (f, &arg[NUMERO0], 1);
       /* creamos syscall_close(int filedes) */
       syscall_close(arg[NUMERO0]);
       break;
@@ -263,14 +242,14 @@ getpage_ptr(const void *vaddr)
 /************ args **************/
 
 void
-get_args (struct intr_frame *f, int *args, int num_of_args)
+obtenerArgumentos (struct intr_frame *f, int *args, int num_of_args)
 {
   int i;
   int *ptr;
 
   for (i = 0; i < num_of_args; i++) {
     ptr = (int *) f->esp + i + 1;
-    validate_ptr((const void *) ptr);
+    validarPunteros((const void *) ptr);
     args[i] = *ptr;
   }
 }
@@ -279,13 +258,13 @@ get_args (struct intr_frame *f, int *args, int num_of_args)
 /************ Buffer **************/
 /* función para comprobar si el búfer es válido */
 void
-validate_buffer(const void* buf, unsigned byte_size)
+validarBuffer(const void* buf, unsigned byte_size)
 {
   unsigned i = 0;
   char* local_buffer = (char *)buf;
   for (; i < byte_size; i++)
   {
-    validate_ptr((const void*)local_buffer);
+    validarPunteros((const void*)local_buffer);
     local_buffer++;
   }
 }
@@ -297,7 +276,7 @@ validate_buffer(const void* buf, unsigned byte_size)
   This function validates the pointer 
 */
 void
-validate_ptr (const void *vaddr)
+validarPunteros (const void *vaddr)
 {
     if (vaddr < USER_VADDR_BOTTOM || !is_user_vaddr(vaddr)) {
       // Err: out of bound memory access
@@ -523,14 +502,14 @@ int syscall_open(const char *file_name)
     lock_release(&file_system_lock);
     return ERROR;
   }
-  int filedes = add_file(file_ptr);
+  int filedes = agregarArchivos(file_ptr);
   lock_release(&file_system_lock);
   return filedes;
 }
 
 /*
 agregar archivo a la lista de archivos y devolver el descriptor de archivo del archivo agregado*/
-int add_file (struct file *file_name)
+int agregarArchivos (struct file *file_name)
 {
   struct process_file *process_file_ptr = malloc(sizeof(struct process_file));
   if (!process_file_ptr)
