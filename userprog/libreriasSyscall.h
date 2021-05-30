@@ -5,6 +5,10 @@
 #define TOKEN_V true
 #define TOKEN_F false
 
+#define OPCION0 0
+#define OPCION1 1
+
+
 /* Son necesarios para el syscall_read */
 #define STD_INPUT 0
 #define STD_OUTPUT 1
