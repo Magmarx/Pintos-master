@@ -334,11 +334,8 @@ syscall_read(int filedes, void *buffer, unsigned length)
   /* read from file */
   lock_acquire(&file_system_lock);
   struct file *file_ptr = get_file(filedes);
-  if (!file_ptr)
-  {
-    lock_release(&file_system_lock);
-    return ERROR;
-  }
+  verificarByteLeer(file_ptr);
+
   int bytes_read = file_read(file_ptr, buffer, length); // from file.h
   lock_release (&file_system_lock);
   return bytes_read;
