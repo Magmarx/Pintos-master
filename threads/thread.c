@@ -29,6 +29,9 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
+#define numero2 2
+#define numero4 4
+
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -323,7 +326,7 @@ thread_tick (void)
   }
 
 
-  
+
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
@@ -616,7 +619,7 @@ void calcularLoadAVG(){
     //loadAVG =  suma(multiplicacionFraccion(divisionFraccion(numero59,numero60),(loadAVG)),multiplicacionFraccion(divisionFraccion(1,60),hilo));
 
     loadAVG = suma(division(multiplicar(loadAVG,numero59),numero60), division(convertNToFixedPoint(list_size(&ready_list) + (strcmp(running_thread()->name,"idle")==0?0:1)),numero60));
-    //variableT = 
+    //variableT =
     temp = divisionFraccion(multiplicar(loadAVG,2),sumaFraccion(multiplicar(loadAVG,2),1));
 
    for (e = list_begin(&all_list); e != list_end(&all_list);e=list_next(e))
@@ -625,7 +628,7 @@ void calcularLoadAVG(){
       struct thread *thre = list_entry(e,struct thread,allelem);
       thre->recent_cpu = sumaFraccion(multiplicacionFraccion(temp,thre->recent_cpu),thre->niceValue);
 
-    } 
+    }
 
   }
 
@@ -644,9 +647,9 @@ void calcularPrioridad(){
   // obtenemos valor de nice agradable
   //int getValueNice = thread_get_nice();
 
-  // estos calculos son de la ecuacion dada riority = PRI_MAX - (recent_cpu / 4) - (nice * 2)  
+  // estos calculos son de la ecuacion dada riority = PRI_MAX - (recent_cpu / 4) - (nice * 2)
   // recent cpu, es una estimacion del tiempo de cpu que el hilo ha utilizado recientemente
- 
+
   if (timer_ticks() % 4==0)
   {
     /* code */
@@ -658,7 +661,7 @@ void calcularPrioridad(){
       struct thread *thre = list_entry(e,struct thread,allelem);
       thre-> priority = PRI_MAX - redondeo(division(thre->recent_cpu,4))-(thre->niceValue * 2);
 
-    } 
+    }
 
   }
 
@@ -753,6 +756,12 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
+
+  int numero = 100;
+
+  calculandoPrioridad(thread_mlfqs,t,"main",numero,priority);
+
+
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   list_init(&t->locks);
@@ -761,8 +770,22 @@ init_thread (struct thread *t, const char *name, int priority)
   t->is_donated=false;
 
   old_level = intr_disable ();
+
   list_push_back (&all_list, &t->allelem);
+  //list_inserted_ordered(&all_list, &t->allelem,,NULL);
+
   intr_set_level (old_level);
+}
+
+void calculandoPrioridad(bool mlfqsThread,struct thread *hilo,char nombre,int numero100,int prioridad){
+  if  (mlfqsThread){
+    if(strcmp(hilo->name,nombre)==0){
+      hilo->recent_cpu = 0;
+    }else{
+      hilo->recent_cpu=division(thread_get_recent_cpu(),numero100);
+      prioridad = PRI_MAX -redondeo(division(hilo->recent_cpu,numero4)) - (hilo->niceValue* numero2);
+    }
+  }
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
