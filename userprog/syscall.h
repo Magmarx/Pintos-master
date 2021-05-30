@@ -5,6 +5,8 @@
 #include "threads/thread.h"
 void syscall_init (void);
 
+
+
 #define ERROR -1
 #define NOT_LOADED 0
 #define LOADED 1

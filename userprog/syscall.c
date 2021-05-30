@@ -13,6 +13,9 @@
 #include "userprog/process.h"
 #include "filesys/file.h"
 
+#include "userprog/libreriasSyscall.h"
+
+
 /********* Global Vars **********/
 #define MAX_ARGS 3
 
@@ -51,9 +54,12 @@ bool syscall_create(const char* file_name, unsigned starting_size);
 bool syscall_remove(const char* file_name);
 pid_t syscall_exec(const char* cmdline);
 
+struct lock memoriaDeLock;
+
 void syscall_init (void) 
 {
-  intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+  lock_init(&memoriaDeLock);
+  intr_register_int (DIRECCION_0X30,TOKEN3, INTR_ON, syscall_handler, SYSCALL);
 }
 
 static void syscall_handler (struct intr_frame *f UNUSED) 
@@ -68,8 +74,12 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
   switch (* (int *)esp) {
     case SYS_HALT:
-      //Detenemos pintos "Apagando la computadora"
-      syscall_halt();
+      /*Detenemos pintos "Apagando la computadora"
+      Segun Stanford: terminates pintos by calling 
+      shutdown_power_off, declarado en threads/init.h
+      pocs veces se debe usar
+      */
+      shutdown_power_off();
       break;
 
     case SYS_CREATE:
@@ -208,12 +218,6 @@ static void syscall_handler (struct intr_frame *f UNUSED)
     default:
       break;
   }
-}
-/* halt */
-void
-syscall_halt (void)
-{
-  shutdown_power_off(); // from shutdown.h
 }
 
 
