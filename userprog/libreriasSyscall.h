@@ -16,6 +16,9 @@ static void syscall_handler (struct intr_frame *);
 
 int obtenerLongitud(int longitud, int condicion);
 
+void verificarEstado(int numero,int condicion, int valor);
+
+
 void syscall_halt (void);
 void syscall_init (void);
 void syscall_seek (int filedes, unsigned new_position);

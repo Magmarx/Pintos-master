@@ -36,6 +36,18 @@ void syscall_init (void)
   intr_register_int (DIRECCION_0X30,TOKEN3, INTR_ON, syscall_handler, SYSCALL);
 }
 
+
+void realizandoVerificaciones(int arg[],struct intr_frame *f,int n){
+  // se va llenando el arreglo con la cantidad de argumentos que son necesarios 
+  obtenerArgumentos(f, &arg[n], NUMERO2);
+      
+  // valida la linea de comandos
+  validate_str((const void *)arg[n]);
+      
+  // SE saca el puntero de la pagina
+  arg[n] = getpage_ptr((const void *) arg[n]);
+}
+
 static void syscall_handler (struct intr_frame *f UNUSED) 
 {
   if (!FILE_LOCK_INIT) {
@@ -48,61 +60,27 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
   switch (* (int *)esp) {
     case SYS_HALT:
-      /*Detenemos pintos "Apagando la computadora"
-      Segun Stanford: terminates pintos by calling 
-      shutdown_power_off, declarado en threads/init.h
-      pocs veces se debe usar
-      */
       shutdown_power_off();
       break;
 
     case SYS_CREATE:
-      // se va llenando el arreglo con la cantidad de argumentos que son necesarios 
-      obtenerArgumentos(f, &arg[NUMERO0], 2);
-      
-      //valida si la linea del comando es valido
-      validate_str((const void *)arg[NUMERO0]);
-      
-      // obtenemos el puntero de la pagina
-      arg[NUMERO0] = getpage_ptr((const void *) arg[NUMERO0]);
-      
+      realizandoVerificaciones(MAX_ARGS,f,NUMERO2);
       /* creamos el syscall le mandamos el nombre del archivo y el tamanio sin signo */
       f->eax = syscall_create((const char *)arg[NUMERO0], (unsigned)arg[NUMERO1]);  // create this file
       break;
 
     case SYS_REMOVE:
-      // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      obtenerArgumentos(f, &arg[NUMERO0], 1);
-      
-      /* comprobamos si la linea de comando es correcta  */
-      validate_str((const void*)arg[NUMERO0]);
-      
-      //vamos a obtener el puntero de pagina 
-      arg[NUMERO0] = getpage_ptr((const void *) arg[NUMERO0]);
-      
-      /* syscall_remove(const char* file_name) */
+      realizandoVerificaciones(MAX_ARGS,f,NUMERO1);
       f->eax = syscall_remove((const char *)arg[NUMERO0]);  // elimina este archivo 
       break;
 
     case SYS_OPEN:
-      // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      obtenerArgumentos(f, &arg[NUMERO0], 1);
-      
-      /* vamos a comprobar si la linea de comando es valida para no abrir basura que 
-      pueda probocar bloqueos 
-       */
-       validate_str((const void*)arg[NUMERO0]);
-     
-     // obtenemos el puntero de pagina 
-      arg[NUMERO0] = getpage_ptr((const void *)arg[NUMERO0]);
-      
-      /* creamos syscall_open(int filedes) */
+      realizandoVerificaciones(MAX_ARGS,f,NUMERO1);
       f->eax = syscall_open((const char *)arg[NUMERO0]);  // abre este  archivo 
       break;
 
     case SYS_FILESIZE:
-      // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      obtenerArgumentos(f, &arg[NUMERO0], 1);
+      obtenerArgumentos(f, &arg[NUMERO0], NUMERO1);
       
       /* creamos syscall_filesize (const char *file_name) le enviamos el nombre del archcivo */
       f->eax = syscall_filesize(arg[NUMERO0]);  // obtenemos el tamanio del archivo
@@ -111,14 +89,10 @@ static void syscall_handler (struct intr_frame *f UNUSED)
     case SYS_WRITE:
       
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      obtenerArgumentos(f, &arg[NUMERO0], 3);
-      
-      /* verificamos si el buffer es valido 
-       * no queremos tener un buffer que esta fuera de nuestra memoria virtual
-       */
-       validarBuffer((const void*)arg[NUMERO1], (unsigned)arg[2]);
-       
-     // obtenemos el puntero de pagina 
+      obtenerArgumentos(f, &arg[NUMERO0], NUMERO3);
+
+      validarBuffer((const void*)arg[NUMERO1], (unsigned)arg[2]);
+      // obtenemos el puntero de pagina 
       arg[NUMERO1] = getpage_ptr((const void *)arg[NUMERO1]); 
       
       /* creamos syscall_write (int filedes, const void * buffer, unsigned bytes)*/
@@ -127,65 +101,39 @@ static void syscall_handler (struct intr_frame *f UNUSED)
     
     case SYS_TELL:
       // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      obtenerArgumentos(f, &arg[NUMERO0], 1);
+      obtenerArgumentos(f, &arg[NUMERO0], NUMERO1);
       /*  creamos syscall_tell(int filedes) */
       f->eax = syscall_tell(arg[NUMERO0]);
       break;
     
-  
-
     case SYS_EXIT:
-      // First we fill all the args with the amound it needs
-      obtenerArgumentos(f, &arg[NUMERO0], 1);
+      obtenerArgumentos(f, &arg[NUMERO0], NUMERO1);
       syscall_exit(arg[NUMERO0]);
       break;
 
     case SYS_EXEC:
-      // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      obtenerArgumentos(f, &arg[NUMERO0], 1);
-      
-      // verifica si la linea de comando es valida
-      validate_str((const void*)arg[NUMERO0]);
-      
-      // obtenemos el puntero de la pagina 
-      arg[NUMERO0] = getpage_ptr((const void *)arg[NUMERO0]);
-      /* creamos  syscall_exec(const char* cmdline) */
+      realizandoVerificaciones(MAX_ARGS,f,NUMERO1);
       f->eax = syscall_exec((const char*)arg[NUMERO0]); // Ejecuta la linea de comando 
-
       break;
 
     case SYS_READ:
-      // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      obtenerArgumentos(f, &arg[NUMERO0], 3);
-      
-       /* verificamos si el buffer es valido 
-       * no queremos tener un buffer que esta fuera de nuestra memoria virtual
-       */
-       validarBuffer((const void*)arg[NUMERO1], (unsigned)arg[2]);
-      // obtenemos el puntero de la pagina 
+      obtenerArgumentos(f, &arg[NUMERO0], NUMERO3);
+      validarBuffer((const void*)arg[NUMERO1], (unsigned)arg[NUMERO2]);
       arg[NUMERO1] = getpage_ptr((const void *)arg[NUMERO1]); 
-      
-      /* creamos  syscall_write (int filedes, const void * buffer, unsigned bytes)*/
       f->eax = syscall_read(arg[NUMERO0], (void *) arg[NUMERO1], (unsigned) arg[2]);
       break;
 
     case SYS_SEEK:
-      // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      obtenerArgumentos(f, &arg[NUMERO0], 2);
-      /* creamos  syscall_seek(int filedes, unsigned new_position) */
+      obtenerArgumentos(f, &arg[NUMERO0], NUMERO2);
       syscall_seek(arg[NUMERO0], (unsigned)arg[NUMERO1]);
       break;
 
     case SYS_WAIT:
-      // fill arg with the amount of arguments needed
-      //obtenerArgumentos(f, &arg[NUMERO0], 1);
-      // process.c
       f->eax = process_wait(arg[NUMERO0]);
       break;
 
     case SYS_CLOSE:
-      // se va llenando el arreglo con la cantidad de argumentos necesarios 
-      obtenerArgumentos (f, &arg[NUMERO0], 1);
+      obtenerArgumentos (f, &arg[NUMERO0], NUMERO1);
       /* creamos syscall_close(int filedes) */
       syscall_close(arg[NUMERO0]);
       break;
@@ -203,6 +151,13 @@ Si pid, esta vivo, espera
 */
 
 
+void verificarEstado(int numero,int condicion, int valor){
+  if (numero<condicion)
+  {
+    /* code */
+    numero = valor;
+  }
+}
 
 /*
   This function checks if the exiting thread is the current thread
@@ -214,9 +169,7 @@ syscall_exit (int status)
   struct thread *cur = thread_current();
 
   if (is_thread_alive(cur->parent) && cur->cp) {
-    if (status < 0) {
-      status = -1;
-    }
+    verificarEstado(status,NUMERO0, RESPUESTA_NEGATIVO);
     cur->cp->status = status;
   }
 
@@ -224,9 +177,9 @@ syscall_exit (int status)
   thread_exit();
 }
 
-/*
-  Here we make the syscall wait
-*/
+
+//Here we make the syscall wait
+
 int
 syscall_wait(pid_t pid)
 {
@@ -275,16 +228,11 @@ validarBuffer(const void* buf, unsigned byte_size)
 }
 
 
-/************ pointers ***********/
-
-/*
-  This function validates the pointer 
-*/
+// valida los punteros
 void
 validarPunteros (const void *vaddr)
 {
     if (vaddr < USER_VADDR_BOTTOM || !is_user_vaddr(vaddr)) {
-      // Err: out of bound memory access
       syscall_exit(ERROR);
     }
 }
@@ -359,6 +307,7 @@ int obtenerLongitud(int longitud, int condicion){
     return longitud;
   }
 }
+
 
 int
 syscall_read(int filedes, void *buffer, unsigned length)
