@@ -12,161 +12,209 @@
 #include "threads/vaddr.h"
 #include "userprog/process.h"
 #include "filesys/file.h"
+#include "corrimientosAritmeticos.h"
+#include "libreriasSyscall.h"
 
-#include "userprog/libreriasSyscall.h"
-#include "userprog/corrimientosAritmeticos.h"
 
 bool FILE_LOCK_INIT = false;
 
-//inicializamos para que no tenga contenido basura
-int i=0;
-const int *ptr=0;
+int arg[MAX_ARGS];
 
-unsigned contadorVerificadorBuffer = 0;
-
-struct lock memoriaDeLock;
-
-char* local_buffer = NULL;
-
-
-
-void syscall_init (void) 
+void syscall_init (void)
 {
-  lock_init(&memoriaDeLock);
-  intr_register_int (DIRECCION_0X30,TOKEN3, INTR_ON, syscall_handler, SYSCALL);
+  intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
 
-void realizandoVerificaciones(int opcionEjecutar,int arg[],struct intr_frame *f,int n){
-  
-  switch(opcionEjecutar){
+void realizarComprobaciones(int condicionEjecutar,struct intr_frame *f UNUSED,int numeroGetArgs){
 
-    case 0:
-      // se va llenando el arreglo con la cantidad de argumentos que son necesarios 
-      obtenerArgumentos(f, &arg[n], NUMERO2);
-      
-      // valida la linea de comandos
-      validate_str((const void *)arg[n]);
-      
-      // SE saca el puntero de la pagina
-      arg[n] = getpage_ptr((const void *) arg[n]);
-    break;
-
+  switch(condicionEjecutar){
     case 1:
-      obtenerArgumentos(f, &arg[n], NUMERO1);
-      /* creamos syscall_filesize (const char *file_name) le enviamos el nombre del archcivo */
-      f->eax = syscall_filesize(arg[n]);  // obtenemos el tamanio del archivo
-      
-    break;
-
-    default:
-    printf("invalid option");
+      // se va llenando el arreglo con la cantidad de argumentos que son necesarios
+      get_args(f, &arg[0], numeroGetArgs);
+      //valida si la linea del comando es valido
+      validate_str((const void *)arg[0]);
+      // obtenemos el puntero de la pagina
+      arg[0] = getpage_ptr((const void *) arg[0]);
     break;
   }
 
 }
 
-static void syscall_handler (struct intr_frame *f UNUSED) 
+
+static void syscall_handler (struct intr_frame *f UNUSED)
 {
   if (!FILE_LOCK_INIT) {
     lock_init(&file_system_lock);
     FILE_LOCK_INIT = true;
   }
-  
-  int arg[MAX_ARGS];
+
+
   int esp = getpage_ptr((const void *) f->esp);
 
   switch (* (int *)esp) {
     case SYS_HALT:
-      shutdown_power_off();
+      /*
+        Segun Stanford, solo se debe utilizar pocas veces
+        Detenemos pintos "Apagando la computadora"
+
+      */
+
+      shutdown_power_off(); // from shutdown.h
+
       break;
 
     case SYS_CREATE:
-      realizandoVerificaciones(OPCION0,MAX_ARGS,f,NUMERO2);
-      f->eax = syscall_create((const char *)arg[NUMERO0], (unsigned)arg[NUMERO1]);  // create this file
+      // se va llenando el arreglo con la cantidad de argumentos que son necesarios
+      //get_args(f, &arg[0], 2);
+
+      //valida si la linea del comando es valido
+      //validate_str((const void *)arg[0]);
+
+      // obtenemos el puntero de la pagina
+      //arg[0] = getpage_ptr((const void *) arg[0]);
+
+      realizarComprobaciones(1,f,2);
+
+      /* creamos el syscall le mandamos el nombre del archivo y el tamanio sin signo */
+      f->eax = syscall_create((const char *)arg[0], (unsigned)arg[1]);  // create this file
       break;
 
     case SYS_REMOVE:
-      realizandoVerificaciones(OPCION0,MAX_ARGS,f,NUMERO1);
-      f->eax = syscall_remove((const char *)arg[NUMERO0]);  // elimina este archivo 
+      // se va llenando el arreglo con la cantidad de argumentos necesarios
+      //get_args(f, &arg[0], NUMERO1);
+      realizarComprobaciones(1,f,1);
+
+      /* comprobamos si la linea de comando es correcta  */
+      //validate_str((const void*)arg[0]);
+
+      //vamos a obtener el puntero de pagina
+      //arg[0] = getpage_ptr((const void *) arg[0]);
+
+      /* syscall_remove(const char* file_name) */
+      f->eax = syscall_remove((const char *)arg[0]);  // elimina este archivo
       break;
 
     case SYS_OPEN:
-      realizandoVerificaciones(OPCION0,MAX_ARGS,f,NUMERO1);
-      f->eax = syscall_open((const char *)arg[NUMERO0]);  // abre este  archivo 
+        realizarComprobaciones(1,f,1);
+
+      // se va llenando el arreglo con la cantidad de argumentos necesarios
+      //get_args(f, &arg[0], NUMERO1);
+
+      /* vamos a comprobar si la linea de comando es valida para no abrir basura que
+      pueda probocar bloqueos
+       */
+       //validate_str((const void*)arg[0]);
+
+     // obtenemos el puntero de pagina
+      //arg[0] = getpage_ptr((const void *)arg[0]);
+
+      /* creamos syscall_open(int filedes) */
+      f->eax = syscall_open((const char *)arg[0]);  // abre este  archivo
       break;
 
     case SYS_FILESIZE:
-      realizandoVerificaciones(OPCION1,MAX_ARGS,f,NUMERO0);
+      // se va llenando el arreglo con la cantidad de argumentos necesarios
+      get_args(f, &arg[NUMERO0], NUMERO1);
+
+      /* creamos syscall_filesize (const char *file_name) le enviamos el nombre del archcivo */
+      f->eax = syscall_filesize(arg[NUMERO0]);  // obtenemos el tamanio del archivo
       break;
-    
+
     case SYS_WRITE:
-      
-      obtenerArgumentos(f, &arg[NUMERO0], NUMERO3);
-      validarBuffer((const void*)arg[NUMERO1], (unsigned)arg[2]);
-      arg[NUMERO1] = getpage_ptr((const void *)arg[NUMERO1]); 
+
+      // se va llenando el arreglo con la cantidad de argumentos necesarios
+      get_args(f, &arg[NUMERO0], NUMERO3);
+
+      /* verificamos si el buffer es valido
+       * no queremos tener un buffer que esta fuera de nuestra memoria virtual
+       */
+       validate_buffer((const void*)arg[NUMERO1], (unsigned)arg[NUMERO2]);
+
+     // obtenemos el puntero de pagina
+      arg[NUMERO1] = getpage_ptr((const void *)arg[NUMERO1]);
+
+      /* creamos syscall_write (int filedes, const void * buffer, unsigned bytes)*/
       f->eax = syscall_write(arg[NUMERO0], (const void *) arg[NUMERO1], (unsigned) arg[NUMERO2]);
       break;
-    
+
     case SYS_TELL:
-      obtenerArgumentos(f, &arg[NUMERO0], NUMERO1);
+      // se va llenando el arreglo con la cantidad de argumentos necesarios
+      get_args(f, &arg[NUMERO0], NUMERO1);
+      /*  creamos syscall_tell(int filedes) */
       f->eax = syscall_tell(arg[NUMERO0]);
       break;
-    
+
+
+
     case SYS_EXIT:
-      obtenerArgumentos(f, &arg[NUMERO0], NUMERO1);
+      // First we fill all the args with the amound it needs
+      get_args(f, &arg[NUMERO0], NUMERO1);
       syscall_exit(arg[NUMERO0]);
       break;
 
     case SYS_EXEC:
-      realizandoVerificaciones(OPCION0,MAX_ARGS,f,NUMERO1);
-      f->eax = syscall_exec((const char*)arg[NUMERO0]); // Ejecuta la linea de comando 
+      realizarComprobaciones(1,f,1);
+
+      // se va llenando el arreglo con la cantidad de argumentos necesarios
+      //get_args(f, &arg[NUMERO0], NUMERO1);
+
+      // verifica si la linea de comando es valida
+      //validate_str((const void*)arg[NUMERO0]);
+
+      // obtenemos el puntero de la pagina
+      //arg[NUMERO0] = getpage_ptr((const void *)arg[NUMERO0]);
+      /* creamos  syscall_exec(const char* cmdline) */
+      f->eax = syscall_exec((const char*)arg[NUMERO0]); // Ejecuta la linea de comando
+
       break;
 
     case SYS_READ:
-      obtenerArgumentos(f, &arg[NUMERO0], NUMERO3);
-      validarBuffer((const void*)arg[NUMERO1], (unsigned)arg[NUMERO2]);
-      arg[NUMERO1] = getpage_ptr((const void *)arg[NUMERO1]); 
-      f->eax = syscall_read(arg[NUMERO0], (void *) arg[NUMERO1], (unsigned) arg[2]);
+      // se va llenando el arreglo con la cantidad de argumentos necesarios
+      get_args(f, &arg[NUMERO0], NUMERO3);
+
+       /* verificamos si el buffer es valido
+       * no queremos tener un buffer que esta fuera de nuestra memoria virtual
+       */
+       validate_buffer((const void*)arg[NUMERO1], (unsigned)arg[NUMERO2]);
+      // obtenemos el puntero de la pagina
+      arg[NUMERO1] = getpage_ptr((const void *)arg[NUMERO1]);
+
+      /* creamos  syscall_write (int filedes, const void * buffer, unsigned bytes)*/
+      f->eax = syscall_read(arg[NUMERO0], (void *) arg[NUMERO1], (unsigned) arg[NUMERO2]);
       break;
 
     case SYS_SEEK:
-      obtenerArgumentos(f, &arg[NUMERO0], NUMERO2);
+      // se va llenando el arreglo con la cantidad de argumentos necesarios
+      get_args(f, &arg[NUMERO0], NUMERO2);
+      /* creamos  syscall_seek(int filedes, unsigned new_position) */
       syscall_seek(arg[NUMERO0], (unsigned)arg[NUMERO1]);
       break;
 
     case SYS_WAIT:
-      f->eax = process_wait(arg[NUMERO0]);
+      // fill arg with the amount of arguments needed
+      get_args(f, &arg[NUMERO0], NUMERO1);
+      f->eax = syscall_wait(arg[NUMERO0]);
       break;
 
     case SYS_CLOSE:
-      obtenerArgumentos (f, &arg[NUMERO0], NUMERO1);
-      lock_acquire(&file_system_lock);
-      process_close_file(arg[NUMERO0]);
-      lock_release(&file_system_lock);
-  
+      // se va llenando el arreglo con la cantidad de argumentos necesarios
+      get_args (f, &arg[NUMERO0], NUMERO1);
+      /* creamos syscall_close(int filedes) */
+      syscall_close(arg[NUMERO0]);
       break;
-  
+
     default:
       break;
   }
 }
-
-/*
-Segun Stanford, se cambia process wait a un bucle
-infinit. Esto hace que se apague antes que cualquier proceso
-
-Si pid, esta vivo, espera
-*/
-
-
-void verificarEstado(int numero,int condicion, int valor){
-  if (numero<condicion)
-  {
-    /* code */
-    numero = valor;
-  }
+/* halt */
+void
+syscall_halt (void)
+{
+  shutdown_power_off(); // from shutdown.h
 }
+
 
 /*
   This function checks if the exiting thread is the current thread
@@ -178,7 +226,9 @@ syscall_exit (int status)
   struct thread *cur = thread_current();
 
   if (is_thread_alive(cur->parent) && cur->cp) {
-    verificarEstado(status,NUMERO0, RESPUESTA_NEGATIVO);
+    if (status < 0) {
+      status = -1;
+    }
     cur->cp->status = status;
   }
 
@@ -186,17 +236,20 @@ syscall_exit (int status)
   thread_exit();
 }
 
-
-//Here we make the syscall wait
-
+/*
+  Here we make the syscall wait
+*/
 int
 syscall_wait(pid_t pid)
 {
   return process_wait(pid);
 }
 
-// Paginas, This function gets the pointer to the active page from the thread
+/************ Pages **************/
 
+/*
+  This function gets the pointer to the active page from the thread
+*/
 int
 getpage_ptr(const void *vaddr)
 {
@@ -207,38 +260,48 @@ getpage_ptr(const void *vaddr)
   return (int)ptr;
 }
 
-// argumentos
+/************ args **************/
+
 void
-obtenerArgumentos (struct intr_frame *f, int *args, int num_of_args)
+get_args (struct intr_frame *f, int *args, int num_of_args)
 {
-  i = 0;
-  while(i < num_of_args){
-    i++;
+  int i=0;
+  int *ptr;
+
+  while (i< num_of_args) {
     ptr = (int *) f->esp + i + 1;
-    validarPunteros(ptr);
+    validate_ptr((const void *) ptr);
     args[i] = *ptr;
+    i++;
   }
 }
+
 
 /************ Buffer **************/
 /* función para comprobar si el búfer es válido */
 void
-validarBuffer(const void* buf, unsigned byte_size)
+validate_buffer(const void* buf, unsigned byte_size)
 {
-  local_buffer = (char *)buf;
-  for (; contadorVerificadorBuffer < byte_size; contadorVerificadorBuffer++)
+  unsigned i = 0;
+  char* local_buffer = (char *)buf;
+  for (; i < byte_size; i++)
   {
-    validarPunteros((const void*)local_buffer);
+    validate_ptr((const void*)local_buffer);
     local_buffer++;
   }
 }
 
 
-// valida los punteros
+/************ pointers ***********/
+
+/*
+  This function validates the pointer
+*/
 void
-validarPunteros (const void *vaddr)
+validate_ptr (const void *vaddr)
 {
     if (vaddr < USER_VADDR_BOTTOM || !is_user_vaddr(vaddr)) {
+      // Err: out of bound memory access
       syscall_exit(ERROR);
     }
 }
@@ -286,12 +349,12 @@ process_close_file (int file_descriptor)
   struct thread *t = thread_current();
   struct list_elem *next;
   struct list_elem *e = list_begin(&t->file_list);
-  
+
   for (;e != list_end(&t->file_list); e = next) {
 
     next = list_next(e);
     struct process_file *process_file_ptr = list_entry (e, struct process_file, elem);
-    
+
     if (file_descriptor == process_file_ptr->fd || file_descriptor == CLOSE_ALL_FD) {
 
       file_close(process_file_ptr->file);
@@ -306,31 +369,28 @@ process_close_file (int file_descriptor)
   }
 }
 
-int obtenerLongitud(int longitud, int condicion){
-  if (longitud<=condicion)
-  {
-    /* code */
-    return longitud;
-  }
-}
 
 
 int
 syscall_read(int filedes, void *buffer, unsigned length)
 {
-  obtenerLongitud(length,NUMERO0);  
+  if (length <= 0)
+  {
+    return length;
+  }
+
   if (filedes == STD_INPUT)
   {
     unsigned i = 0;
     uint8_t *local_buf = (uint8_t *) buffer;
     for (;i < length; i++)
     {
-      //recuperar la tecla presionando desde el buffer de entrada 
+      //recuperar la tecla presionando desde el buffer de entrada
       local_buf[i] = input_getc(); // from input.h
     }
     return length;
   }
-  
+
   /* read from file */
   lock_acquire(&file_system_lock);
   struct file *file_ptr = get_file(filedes);
@@ -351,7 +411,7 @@ get_file (int filedes)
   struct thread *t = thread_current();
   struct list_elem* next;
   struct list_elem* e = list_begin(&t->file_list);
-  
+
   for (; e != list_end(&t->file_list); e = next)
   {
     next = list_next(e);
@@ -361,8 +421,9 @@ get_file (int filedes)
       return process_file_ptr->file;
     }
   }
-  return NULL; // renturn null cuando no se encuentre nada 
+  return NULL; // renturn null cuando no se encuentre nada
 }
+
 
 /* syscall_seek */
 void
@@ -379,17 +440,25 @@ syscall_seek (int filedes, unsigned new_position)
   lock_release(&file_system_lock);
 }
 
+/* syscall_close */
+void
+syscall_close(int filedes)
+{
+  lock_acquire(&file_system_lock);
+  process_close_file(filedes);
+  lock_release(&file_system_lock);
+}
 
 
 /************ Child Process **************/
 
 /* Remove all the child processes in a thread */
-void remove_all_child_processes (void) 
+void remove_all_child_processes (void)
 {
   struct thread *t = thread_current();
   struct list_elem *next;
   struct list_elem *e = list_begin(&t->child_list);
-  
+
   // For all the child processes in the thread we will remove it
   for (;e != list_end(&t->child_list); e = next) {
     next = list_next(e);
@@ -413,7 +482,7 @@ struct child_process* find_child_process(int pid)
   struct thread *t = thread_current();
   struct list_elem *e;
   struct list_elem *next;
-  
+
   for (e = list_begin(&t->child_list); e != list_end(&t->child_list); e = next)
   {
     next = list_next(e);
@@ -451,19 +520,21 @@ int syscall_open(const char *file_name)
 {
   lock_acquire(&file_system_lock);
   struct file *file_ptr = filesys_open(file_name); // from filesys.h
-  if (!file_ptr)
+  /*if (!file_ptr)
   {
     lock_release(&file_system_lock);
     return ERROR;
-  }
-  int filedes = agregarArchivos(file_ptr);
+  }*/
+  verificarByteLeer(file_ptr);
+
+  int filedes = add_file(file_ptr);
   lock_release(&file_system_lock);
   return filedes;
 }
 
 /*
 agregar archivo a la lista de archivos y devolver el descriptor de archivo del archivo agregado*/
-int agregarArchivos (struct file *file_name)
+int add_file (struct file *file_name)
 {
   struct process_file *process_file_ptr = malloc(sizeof(struct process_file));
   if (!process_file_ptr)
@@ -475,7 +546,7 @@ int agregarArchivos (struct file *file_name)
   thread_current()->fd++;
   list_push_back(&thread_current()->file_list, &process_file_ptr->elem);
   return process_file_ptr->fd;
-  
+
 }
 
 /* creamos  syscall_filesize */
@@ -483,41 +554,69 @@ int syscall_filesize(int filedes)
 {
   lock_acquire(&file_system_lock);
   struct file *file_ptr = get_file(filedes);
-  if (!file_ptr)
+  /*if (!file_ptr)
   {
     lock_release(&file_system_lock);
     return ERROR;
-  }
+  }*/
+  verificarByteLeer(file_ptr);
+
   int filesize = file_length(file_ptr); // from file.h
   lock_release(&file_system_lock);
   return filesize;
 }
 
+
+
+/*
+Segun Stanford: Escribe bytes de tamaño desde el búfer al archivo abierto fd. Devuelve el número de bytes realmente escritos,
+que puede ser menor que el tamaño si no se pudieron escribir algunos bytes.
+*/
+
+int devolverNumeroBytes(unsigned byteSize,int fichero, int condicionComparar,const void * buffer){
+  if (byteSize<=condicionComparar){
+    return byteSize;
+  }
+  if (fichero == STD_OUTPUT)
+  {
+    putbuf (buffer, byteSize); // from stdio.h
+    return byteSize;
+  }
+}
+
+
 /* creamos syscall_write */
 int  syscall_write (int filedes, const void * buffer, unsigned byte_size)
 {
-    if (byte_size <= 0)
-    {
-      return byte_size;
-    }
-    if (filedes == STD_OUTPUT)
-    {
-      putbuf (buffer, byte_size); // from stdio.h
-      return byte_size;
-    }
-    
-    // se empiez a escribir en el archivo 
+    devolverNumeroBytes(byte_size,filedes,0,buffer);
+    // se empiez a escribir en el archivo
     lock_acquire(&file_system_lock);
     struct file *file_ptr = get_file(filedes);
-    if (!file_ptr)
+    verificarByteLeer(file_ptr);
+
+    /*if (!file_ptr)
     {
       lock_release(&file_system_lock);
       return ERROR;
-    }
+    }*/
     int bytes_written = file_write(file_ptr, buffer, byte_size); // file.h
     lock_release (&file_system_lock);
     return bytes_written;
 }
+
+/*
+ Devuelve la posición del siguiente byte a leer o escribir en el archivo abierto fd,
+ expresado en bytes desde el principio del archivo.
+
+*/
+
+int verificarByteLeer( struct file *file_ptr){
+  if (!file_ptr){
+    lock_release(&file_system_lock);
+    return ERROR;
+  }
+}
+
 
 /* syscall_tell */
 unsigned
@@ -525,11 +624,13 @@ syscall_tell(int filedes)
 {
   lock_acquire(&file_system_lock);
   struct file *file_ptr = get_file(filedes);
-  if (!file_ptr)
+  verificarByteLeer(file_ptr);
+  /*if (!file_ptr)
   {
     lock_release(&file_system_lock);
     return ERROR;
-  }
+  }*/
+
   off_t offset = file_tell(file_ptr); //from file.h
   return offset;
 }

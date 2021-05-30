@@ -1,28 +1,21 @@
-#define TOKEN3 3
-#define DIRECCION_0X30 0X30
-#define SYSCALL "syscall"
-#define VACIO NULL
-#define TOKEN_V true
-#define TOKEN_F false
+/*
 
-#define OPCION0 0
-#define OPCION1 1
+    Prototipos que se debe implementar en syscall.c
+*/
 
+#define MAX_ARGS 3
 
-/* Son necesarios para el syscall_read */
+/* syscall_read */
 #define STD_INPUT 0
 #define STD_OUTPUT 1
 
+void get_args (struct intr_frame *f, int *arg, int num_of_args);
 
-
-/*Prototipos que se debe implmentr en syscall*/
+void validate_ptr (const void* vaddr);
+int add_file (struct file *file_name);
+void validate_str (const void* str);
+void validate_buffer (const void* buf, unsigned byte_size);
 static void syscall_handler (struct intr_frame *);
-
-int obtenerLongitud(int longitud, int condicion);
-
-void verificarEstado(int numero,int condicion, int valor);
-
-
 void syscall_halt (void);
 void syscall_init (void);
 void syscall_seek (int filedes, unsigned new_position);
@@ -35,22 +28,3 @@ int syscall_write (int filedes, const void * buffer, unsigned byte_size);
 bool syscall_create(const char* file_name, unsigned starting_size);
 bool syscall_remove(const char* file_name);
 pid_t syscall_exec(const char* cmdline);
-
-
-
-void getObtenerArgumentos (struct intr_frame *f, int *arg, int num_of_args);//args
-void verificarPunteros(const void* vaddr);//pointers
-int agregarArchivos (struct file *file_name);//file 
-// Validator 
-void validate_str (const void* str);
-void verificadorBuffer (const void* buf, unsigned byte_size);
-
-//args
-void obtenerArgumentos (struct intr_frame *f, int *arg, int num_of_args);
-//pointers
-void validarPunteros (const void* vaddr);
-//file 
-int agregarArchivos (struct file *file_name);
-// Validator 
-void validate_str (const void* str);
-void validarBuffer (const void* buf, unsigned byte_size);
