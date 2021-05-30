@@ -10,6 +10,7 @@
 #define STD_OUTPUT 1
 
 
+
 /*Prototipos que se debe implmentr en syscall*/
 static void syscall_handler (struct intr_frame *);
 void syscall_halt (void);
@@ -24,3 +25,13 @@ int syscall_write (int filedes, const void * buffer, unsigned byte_size);
 bool syscall_create(const char* file_name, unsigned starting_size);
 bool syscall_remove(const char* file_name);
 pid_t syscall_exec(const char* cmdline);
+
+
+
+void getObtenerArgumentos (struct intr_frame *f, int *arg, int num_of_args);//args
+void verificarPunteros(const void* vaddr);//pointers
+int agregarArchivos (struct file *file_name);//file 
+// Validator 
+void validate_str (const void* str);
+void verificadorBuffer (const void* buf, unsigned byte_size);
+
