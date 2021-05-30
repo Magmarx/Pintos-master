@@ -13,6 +13,9 @@
 
 /*Prototipos que se debe implmentr en syscall*/
 static void syscall_handler (struct intr_frame *);
+
+int obtenerLongitud(int longitud, int condicion);
+
 void syscall_halt (void);
 void syscall_init (void);
 void syscall_seek (int filedes, unsigned new_position);

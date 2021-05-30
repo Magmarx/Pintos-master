@@ -18,8 +18,17 @@
 
 bool FILE_LOCK_INIT = false;
 
+//inicializamos para que no tenga contenido basura
+int i=0;
+const int *ptr=0;
+
+unsigned contadorVerificadorBuffer = 0;
 
 struct lock memoriaDeLock;
+
+char* local_buffer = NULL;
+
+
 
 void syscall_init (void) 
 {
@@ -240,29 +249,25 @@ getpage_ptr(const void *vaddr)
 }
 
 /************ args **************/
-
 void
 obtenerArgumentos (struct intr_frame *f, int *args, int num_of_args)
 {
-  int i;
-  int *ptr;
-
-  for (i = 0; i < num_of_args; i++) {
+  i = 0;
+  while(i < num_of_args){
+    i++;
     ptr = (int *) f->esp + i + 1;
-    validarPunteros((const void *) ptr);
+    validarPunteros(ptr);
     args[i] = *ptr;
   }
 }
-
 
 /************ Buffer **************/
 /* función para comprobar si el búfer es válido */
 void
 validarBuffer(const void* buf, unsigned byte_size)
 {
-  unsigned i = 0;
-  char* local_buffer = (char *)buf;
-  for (; i < byte_size; i++)
+  local_buffer = (char *)buf;
+  for (; contadorVerificadorBuffer < byte_size; contadorVerificadorBuffer++)
   {
     validarPunteros((const void*)local_buffer);
     local_buffer++;
@@ -347,16 +352,18 @@ process_close_file (int file_descriptor)
   }
 }
 
-
+int obtenerLongitud(int longitud, int condicion){
+  if (longitud<=condicion)
+  {
+    /* code */
+    return longitud;
+  }
+}
 
 int
 syscall_read(int filedes, void *buffer, unsigned length)
 {
-  if (length <= 0)
-  {
-    return length;
-  }
-  
+  obtenerLongitud(length,NUMERO0);  
   if (filedes == STD_INPUT)
   {
     unsigned i = 0;
