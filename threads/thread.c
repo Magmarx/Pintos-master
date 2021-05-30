@@ -321,9 +321,9 @@ thread_tick (void)
 
     calcularPrioridad();
 
-  }else{
-    thread_set_next_wakeup();
-  }
+  }//else{
+   // thread_set_next_wakeup();
+  //}
 
 
 
@@ -757,27 +757,39 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
 
-  int numero = 100;
+  int numero100 = 100;
 
-  calculandoPrioridad(thread_mlfqs,t,"main",numero,priority);
-
+  //calculandoPrioridad(thread_mlfqs,t,"main",numero,priority);
+  if  (thread_mlfqs){
+    if(strcmp(t->name,"main")==0){
+      t->recent_cpu = 0;
+    }else{
+      t->recent_cpu=division(thread_get_recent_cpu(),numero100);
+      priority = PRI_MAX -redondeo(division(t->recent_cpu,numero4)) - (t->niceValue* numero2);
+    }
+  }
 
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+
+  t->old_priority = priority;
+
+
   list_init(&t->locks);
   t->lock_blocked_by = NULL;
-  t->old_priority = priority;
-  t->is_donated=false;
+  
+  //t->old_priority = priority;
+  //t->is_donated=false;
 
   old_level = intr_disable ();
 
-  list_push_back (&all_list, &t->allelem);
-  //list_inserted_ordered(&all_list, &t->allelem,,NULL);
+  //list_push_back (&all_list, &t->allelem);
+  list_insert_ordered(&all_list, &t->allelem,compare_priority,NULL);
 
   intr_set_level (old_level);
 }
 
-void calculandoPrioridad(bool mlfqsThread,struct thread *hilo,char nombre,int numero100,int prioridad){
+/*void calculandoPrioridad(bool mlfqsThread,struct thread *hilo,char nombre,int numero100,int prioridad){
   if  (mlfqsThread){
     if(strcmp(hilo->name,nombre)==0){
       hilo->recent_cpu = 0;
@@ -786,7 +798,7 @@ void calculandoPrioridad(bool mlfqsThread,struct thread *hilo,char nombre,int nu
       prioridad = PRI_MAX -redondeo(division(hilo->recent_cpu,numero4)) - (hilo->niceValue* numero2);
     }
   }
-}
+}*/
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
    returns a pointer to the frame's base. */
