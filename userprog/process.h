@@ -8,4 +8,8 @@ int process_wait (tid_t);
 void process_exit (void);
 void process_activate (void);
 
+void procesoExit(struct thread *hilo);
+
+
+void accionHiloVivo(struct thread *hilo);
 #endif /* userprog/process.h */

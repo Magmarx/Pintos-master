@@ -114,12 +114,10 @@ process_wait (tid_t child_tid UNUSED)
     return ERROR;
   }
   
-  // If the child process is already waiting we throw an error 
   if (child_process_ptr->wait)
   {
     return ERROR;
   }
-  // set wait for child to true
   child_process_ptr->wait = 1; 
   while (!child_process_ptr->exit)
   {
@@ -131,6 +129,22 @@ process_wait (tid_t child_tid UNUSED)
   return status;
 }
 
+
+void procesoExit(struct thread *hilo){
+  process_close_file(CLOSE_ALL_FD);
+  if (hilo->executable) {
+    file_close(hilo->executable);
+  }
+
+}
+
+void accionHiloVivo(struct thread *hilo){
+  if (is_thread_alive(hilo->parent)){
+    hilo->cp->exit = 1;
+    sema_up(&hilo->cp->exit_sema);
+  }
+}
+
 /* Free the current process's resources. */
 void
 process_exit (void)
@@ -140,20 +154,13 @@ process_exit (void)
   
   lock_acquire(&file_system_lock);
 
-  process_close_file(CLOSE_ALL_FD);
-  if (cur->executable) {
-    file_close(cur->executable);
-  }
+  procesoExit(cur);
 
   lock_release(&file_system_lock);
   
   remove_all_child_processes();
   
-  if (is_thread_alive(cur->parent))
-  {
-    cur->cp->exit = 1;
-    sema_up(&cur->cp->exit_sema);
-  }
+  accionHiloVivo(cur);
 
   
   /* Destroy the current process's page directory and switch back
@@ -505,12 +512,13 @@ setup_stack (void **esp, char **saveptr, const char *filename)
   int arg_size = DEFAULT_ARGV;
 
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  if (kpage != NULL) {
-    success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-    *esp = PHYS_BASE;
-  } else {
+  if (kpage == NULL) {
+    
     palloc_free_page(kpage);
     return success;
+  } else {
+    success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
+    *esp = PHYS_BASE;
   }
 
   for (token = (char*)filename; token != NULL; token = strtok_r(NULL, " ", saveptr)){
@@ -558,6 +566,8 @@ setup_stack (void **esp, char **saveptr, const char *filename)
 
   return success;
 }
+
+
 
 void operaciones(char opcionEjecutar,void **doblePunteroVoid,int byte_size,int argc,char** argv,char* token){
   switch(opcionEjecutar){
