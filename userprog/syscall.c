@@ -23,8 +23,6 @@ int *puntero = 0;
 bool FILE_LOCK_INIT = false;
 
 
-struct lock memoriaDeLock;
-
 void syscall_init (void) 
 {
   intr_register_int (DIRECCION_0X30,TOKEN3, INTR_ON, syscall_handler, SYSCALL);
@@ -147,7 +145,7 @@ static void syscall_handler (struct intr_frame *f UNUSED)
     case SYS_WAIT:
       // fill arg with the amount of arguments needed
       obtenerArgumentos(f, &arg[0], 1);
-      f->eax = syscall_wait(arg[0]);
+      f->eax = process_wait(arg[0]);
       break;
 
     case SYS_CLOSE:
@@ -162,20 +160,21 @@ static void syscall_handler (struct intr_frame *f UNUSED)
   }
 }
 
+void estadoSalida(int status){
+  if (status<0)
+  {
+    /* code */
+    status = -1;
+  }
+}
 
-/*
-  This function checks if the exiting thread is the current thread
-  If true we update the parent status
-*/
-void
-syscall_exit (int status)
+void syscall_exit (int status)
 {
   struct thread *cur = thread_current();
 
   if (is_thread_alive(cur->parent) && cur->cp) {
-    if (status < 0) {
-      status = -1;
-    }
+
+    estadoSalida(status);
     cur->cp->status = status;
   }
 
@@ -184,10 +183,7 @@ syscall_exit (int status)
 }
 
 
-int syscall_wait(pid_t pid)
-{
-  return process_wait(pid);
-}
+
 
 int getpage_ptr(const void *vaddr)
 {
@@ -201,13 +197,14 @@ int getpage_ptr(const void *vaddr)
 
 void obtenerArgumentos (struct intr_frame *f, int *args, int num_of_args)
 {
-  int i;
+  int i=0;
   int *ptr;
 
-  for (i = 0; i < num_of_args; i++) {
+  while(i < num_of_args) {
     ptr = (int *) f->esp + i + 1;
     verificarPuntero((const void *) ptr);
     args[i] = *ptr;
+    i++;
   }
 }
 
@@ -243,20 +240,31 @@ pid_t syscall_exec(const char* cmdline)
     {
       return ERROR;
     }
-    /* comprobar si el proceso está cargado */
-    if (child_process_ptr->load_status == NOT_LOADED)
-    {
-      sema_down(&child_process_ptr->load_sema);
-    }
-    /* comprobar si el proceso no se pudo cargar */
-    if (child_process_ptr->load_status == LOAD_FAIL)
-    {
-      remove_child_process(child_process_ptr);
-      return ERROR;
-    }
+
+    accionSiscallExec(1,child_process_ptr);
+
+    accionSiscallExec(100,child_process_ptr);
+
     return pid;
 }
 
+void accionSiscallExec(int accion,struct child_process *child_process_ptr){
+
+  if (accion==1)
+  {
+    /* code */
+    if(child_process_ptr->load_status==NOT_LOADED){
+      sema_down(&child_process_ptr->load_sema);
+
+    }
+  }else{
+    if(child_process_ptr->load_status==LOAD_FAIL){
+      remove_child_process(child_process_ptr);
+      return ERROR;
+    }
+  }
+
+}
 
 /* función para comprobar que la cadena es válida */
 void
@@ -293,6 +301,7 @@ void process_close_file (int file_descriptor)
 }
 
 
+
 int syscallLectura(int filedes, void *buffer, unsigned length)
 {
   if (length <= 0)
@@ -309,6 +318,7 @@ int syscallLectura(int filedes, void *buffer, unsigned length)
       //recuperar la tecla presionando desde el buffer de entrada 
       local_buf[i] = input_getc(); // from input.h
     }
+    //recursionContador(i,length, local_buf);
     return length;
   }
   
