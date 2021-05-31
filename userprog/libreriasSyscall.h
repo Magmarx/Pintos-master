@@ -5,52 +5,35 @@
 #define TOKEN_V true
 #define TOKEN_F false
 
-#define OPCION0 0
-#define OPCION1 1
+#define NUMERO0 0
+#define NUMERO1 1
+
+#define NUMERO2 (32>>4)
+
+/* syscallLectura */
+#define valorCero 0
+#define valor1 1
 
 
-/* Son necesarios para el syscall_read */
-#define STD_INPUT 0
-#define STD_OUTPUT 1
+void obtenerArgumentos (struct intr_frame *f, int *arg, int num_of_args);
+void verificarPuntero (const void* vaddr);
 
+int add_file (struct file *file_name);
 
+void validate_str (const void* str);
+void verificarBuffer (const void* buf, unsigned byte_size);
 
-/*Prototipos que se debe implmentr en syscall*/
+// llamadas al sistema
 static void syscall_handler (struct intr_frame *);
-
-int obtenerLongitud(int longitud, int condicion);
-
-void verificarEstado(int numero,int condicion, int valor);
-
-
 void syscall_halt (void);
 void syscall_init (void);
 void syscall_seek (int filedes, unsigned new_position);
 void syscall_close(int filedes);
 unsigned syscall_tell(int fildes);
-int syscall_read(int filedes, void *buffer, unsigned length);
-int syscall_open(const char * file_name);
-int syscall_filesize(int filedes);
-int syscall_write (int filedes, const void * buffer, unsigned byte_size);
-bool syscall_create(const char* file_name, unsigned starting_size);
-bool syscall_remove(const char* file_name);
+int syscallLectura(int filedes, void *buffer, unsigned length);
+int syscallAbrir(const char * file_name);
+int syscallTamanoArchivo(int filedes);
+int syscallEscritura (int filedes, const void * buffer, unsigned byte_size);
+bool syscallCreacion(const char* file_name, unsigned starting_size);
+bool syscallEliminar(const char* file_name);
 pid_t syscall_exec(const char* cmdline);
-
-
-
-void getObtenerArgumentos (struct intr_frame *f, int *arg, int num_of_args);//args
-void verificarPunteros(const void* vaddr);//pointers
-int agregarArchivos (struct file *file_name);//file 
-// Validator 
-void validate_str (const void* str);
-void verificadorBuffer (const void* buf, unsigned byte_size);
-
-//args
-void obtenerArgumentos (struct intr_frame *f, int *arg, int num_of_args);
-//pointers
-void validarPunteros (const void* vaddr);
-//file 
-int agregarArchivos (struct file *file_name);
-// Validator 
-void validate_str (const void* str);
-void validarBuffer (const void* buf, unsigned byte_size);

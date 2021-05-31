@@ -7,6 +7,8 @@ void syscall_init (void);
 
 
 
+
+#define argumentoMaximo 3
 #define ERROR -1
 #define NOT_LOADED 0
 #define LOADED 1
@@ -33,19 +35,15 @@ struct child_process {
 
 struct lock file_system_lock;
 
-/******** syscall ***********/
 void syscall_exit (int status);
 
-/******** Child process **********/
 struct child_process* find_child_process (int pid);
 void remove_child_process (struct child_process *child);
 void remove_all_child_processes (void);
 
-/******** Files **********/
 void process_close_file (int file_descriptor);
 struct file* get_file(int filedes);
 
-/******** Pages *********/
 int getpage_ptr (const void *vaddr);
 
 #endif /* userprog/syscall.h */
