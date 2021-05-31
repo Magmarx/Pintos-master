@@ -356,8 +356,6 @@ syscall_seek (int filedes, unsigned new_position)
   lock_release(&file_system_lock);
 }
 
-
-
 /* creamos  syscallTamanoArchivo */
 int syscallTamanoArchivo(int filedes)
 {
@@ -392,11 +390,8 @@ int decidirOpcion(int opcionEjecutar,const char *file_name,int filedes){
   }
 }
 
-
-
 /* syscall_close */
-void
-syscall_close(int filedes)
+void syscall_close(int filedes)
 {
   lock_acquire(&file_system_lock);
   process_close_file(filedes);
@@ -411,12 +406,13 @@ void remove_all_child_processes (void)
   struct list_elem *next;
   struct list_elem *e = list_begin(&t->child_list);
   
-  // For all the child processes in the thread we will remove it
-  for (;e != list_end(&t->child_list); e = next) {
+  //for (;e != list_end(&t->child_list); e = next) {
+  while(e!=list_end(&t->child_list)){
     next = list_next(e);
     struct child_process *cp = list_entry(e, struct child_process, elem);
     list_remove(&cp->elem);
     free(cp);
+    e = next;
   }
 }
 
@@ -431,10 +427,10 @@ void remove_child_process (struct child_process *cp)
 struct child_process* find_child_process(int pid)
 {
   struct thread *t = thread_current();
-  struct list_elem *e;
+  struct list_elem *e = list_begin(&t->child_list);
   struct list_elem *next;
   
-  for (e = list_begin(&t->child_list); e != list_end(&t->child_list); e = next)
+  while(e!=list_end(&t->child_list))
   {
     next = list_next(e);
     struct child_process *cp = list_entry(e, struct child_process, elem);
@@ -442,6 +438,7 @@ struct child_process* find_child_process(int pid)
     {
       return cp;
     }
+    e = next;
   }
   return NULL;
 }
@@ -492,14 +489,16 @@ int add_file (struct file *file_name)
   
 }
 
+int tamanoByte(int size, int comparar){
+  if (size <= comparar){
+    return size;
+  }
+}
 
 /* creamos syscallEscritura */
 int  syscallEscritura (int filedes, const void * buffer, unsigned byte_size)
 {
-    if (byte_size <= 0)
-    {
-      return byte_size;
-    }
+    tamanoByte(byte_size, 0);
     if (filedes == valor1)
     {
       putbuf (buffer, byte_size); // from stdio.h
