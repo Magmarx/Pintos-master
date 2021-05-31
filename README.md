@@ -2,6 +2,14 @@
 
 [Home](https://magmarx.github.io/Pintos-master/)
 
+[Referencias 1](http://bits.usc.edu/cs350/assignments/project2.pdf)
+[Referencias 2](https://francisco-hernandez.gitbook.io/la-guia-del-frijol/fase-1-threads/alarm-clock)
+[Referencias 3](https://web.stanford.edu/class/cs140/projects/pintos/pintos_3.html#SEC45)
+[Referencias 4](https://slideplayer.com/slide/7988080/)
+
+
+
+
 Dentro de esta fase tuvimos que extender sobre la implementación de threads que nos dieron dentro del codigo de base de Pintos
 
 Dentro del codigo base tenemos una estructura para los threads proporcionada por pintos, esta se encuentra dentro del archivo **thread.h**
