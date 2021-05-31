@@ -27,7 +27,6 @@ struct lock memoriaDeLock;
 
 void syscall_init (void) 
 {
-  lock_init(&memoriaDeLock);
   intr_register_int (DIRECCION_0X30,TOKEN3, INTR_ON, syscall_handler, SYSCALL);
 }
 
@@ -70,18 +69,18 @@ static void syscall_handler (struct intr_frame *f UNUSED)
       break;
 
     case SYS_CREATE:
-      realizarVerificacionesSyscall(f,NUMERO2,argumentoMaximo,1);    
+      realizarVerificacionesSyscall(f,NUMERO2,arg,1);    
       f->eax = syscallCreacion((const char *)arg[0], (unsigned)arg[1]);  // create this file
       break;
 
     case SYS_REMOVE:
 
-      realizarVerificacionesSyscall(f,NUMERO1,argumentoMaximo,1);    
+      realizarVerificacionesSyscall(f,NUMERO1,arg,1);    
       f->eax = syscallEliminar((const char *)arg[0]); 
       break;
 
     case SYS_OPEN:
-      realizarVerificacionesSyscall(f,NUMERO1,argumentoMaximo,1);    
+      realizarVerificacionesSyscall(f,NUMERO1,arg,1);    
       /* creamos syscallAbrir(int filedes) */
       f->eax = syscallAbrir((const char *)arg[0]);  // abre este  archivo 
       break;
@@ -122,7 +121,7 @@ static void syscall_handler (struct intr_frame *f UNUSED)
 
     case SYS_EXEC:
 
-      realizarVerificacionesSyscall(f,NUMERO1,argumentoMaximo,1);    
+      realizarVerificacionesSyscall(f,NUMERO1,arg,1);    
       f->eax = syscall_exec((const char*)arg[0]); // Ejecuta la linea de comando 
 
       break;
@@ -184,22 +183,13 @@ syscall_exit (int status)
   thread_exit();
 }
 
-/*
-  Here we make the syscall wait
-*/
-int
-syscall_wait(pid_t pid)
+
+int syscall_wait(pid_t pid)
 {
   return process_wait(pid);
 }
 
-/************ Pages **************/
-
-/*
-  This function gets the pointer to the active page from the thread
-*/
-int
-getpage_ptr(const void *vaddr)
+int getpage_ptr(const void *vaddr)
 {
   void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
   if (!ptr) {
@@ -223,8 +213,7 @@ void obtenerArgumentos (struct intr_frame *f, int *args, int num_of_args)
 
 
 /*buffer: función para comprobar si el búfer es válido */
-void
-verificarBuffer(const void* buf, unsigned byte_size)
+void verificarBuffer(const void* buf, unsigned byte_size)
 {
   unsigned i = 0;
   char* local_buffer = (char *)buf;
@@ -240,8 +229,7 @@ verificarBuffer(const void* buf, unsigned byte_size)
 void
 verificarPuntero (const void *vaddr)
 {
-    if (vaddr < USER_VADDR_BOTTOM || !is_user_vaddr(vaddr)) {
-      // Err: out of bound memory access
+    if (vaddr < DIRECCION || !is_user_vaddr(vaddr)) {
       syscall_exit(ERROR);
     }
 }
@@ -269,7 +257,6 @@ pid_t syscall_exec(const char* cmdline)
     return pid;
 }
 
-/************ String ***********/
 
 /* función para comprobar que la cadena es válida */
 void
@@ -277,7 +264,6 @@ validate_str (const void* str)
 {
     for (; * (char *) getpage_ptr(str) != 0; str = (char *) str + 1);
 }
-
 
 
 // cerramos el archivo
@@ -307,9 +293,7 @@ void process_close_file (int file_descriptor)
 }
 
 
-
-int
-syscallLectura(int filedes, void *buffer, unsigned length)
+int syscallLectura(int filedes, void *buffer, unsigned length)
 {
   if (length <= 0)
   {
@@ -358,7 +342,7 @@ get_file (int filedes)
       return process_file_ptr->file;
     }
   }
-  return NULL; // renturn null cuando no se encuentre nada 
+  return NULL; 
 }
 
 /* syscall_seek */
@@ -367,14 +351,48 @@ syscall_seek (int filedes, unsigned new_position)
 {
   lock_acquire(&file_system_lock);
   struct file *file_ptr = get_file(filedes);
-  if (!file_ptr)
-  {
-    lock_release(&file_system_lock);
-    return;
-  }
+  verificadorSyscall(filedes);
   file_seek(file_ptr, new_position);
   lock_release(&file_system_lock);
 }
+
+
+
+/* creamos  syscallTamanoArchivo */
+int syscallTamanoArchivo(int filedes)
+{
+
+  decidirOpcion(1,'a',filedes);
+}
+
+/* cramos syscallAbrir */
+int syscallAbrir(const char *file_name)
+{
+
+  decidirOpcion(33,file_name,0);
+}
+int decidirOpcion(int opcionEjecutar,const char *file_name,int filedes){
+  int retorno=0;
+  lock_acquire(&file_system_lock);
+  if (opcionEjecutar==1)
+  {
+    /* code */
+    //syscall tamano archivo 
+     struct file *file_ptr = get_file(filedes);
+     verificadorSyscall(file_ptr);
+     retorno = file_length(file_ptr);
+     lock_release(&file_system_lock);
+     return retorno; 
+  }else{
+    struct file *file_ptr = filesys_open(file_name); // from filesys.h
+    verificadorSyscall(file_ptr);
+    retorno = add_file(file_ptr);
+    lock_release(&file_system_lock);
+    return retorno;
+  }
+}
+
+
 
 /* syscall_close */
 void
@@ -456,16 +474,6 @@ void creacionEliminacionSyscall(bool condicion,const char* file_name,unsigned st
   return condicion;
 }
 
-/* cramos syscallAbrir */
-int syscallAbrir(const char *file_name)
-{
-  lock_acquire(&file_system_lock);
-  struct file *file_ptr = filesys_open(file_name); // from filesys.h
-  verificadorSyscall(file_ptr);
-  int filedes = add_file(file_ptr);
-  lock_release(&file_system_lock);
-  return filedes;
-}
 
 /*
 agregar archivo a la lista de archivos y devolver el descriptor de archivo del archivo agregado*/
@@ -484,16 +492,6 @@ int add_file (struct file *file_name)
   
 }
 
-/* creamos  syscallTamanoArchivo */
-int syscallTamanoArchivo(int filedes)
-{
-  lock_acquire(&file_system_lock);
-  struct file *file_ptr = get_file(filedes);
-  verificadorSyscall(file_ptr);
-  int filesize = file_length(file_ptr); // from file.h
-  lock_release(&file_system_lock);
-  return filesize;
-}
 
 /* creamos syscallEscritura */
 int  syscallEscritura (int filedes, const void * buffer, unsigned byte_size)

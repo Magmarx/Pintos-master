@@ -60,11 +60,10 @@ start_process (void *file_name_)
   struct intr_frame if_;
   bool success;
 
-  /* New Code */
   char *saveptr;
   
   file_name = strtok_r ((char*)file_name, " ", &saveptr);
-  /* */
+
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -73,7 +72,6 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp, &saveptr);
 
-  /* New Code */
   if (success){
     thread_current()->cp->load_status = LOADED;
   }
@@ -110,9 +108,7 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  // First we get the child process we want to put in wait
   struct child_process* child_process_ptr = find_child_process(child_tid);
-  // If we dont have an active child process we throw an error
   if (!child_process_ptr)
   {
     return ERROR;
@@ -142,23 +138,15 @@ process_exit (void)
   struct thread *cur = thread_current ();
   uint32_t *pd;
   
-  // From here 
   lock_acquire(&file_system_lock);
 
-  // First after we acquiere the lock we close the file
   process_close_file(CLOSE_ALL_FD);
-  /* Then we check if the current thread is executable if not we close it */
   if (cur->executable) {
-    /* Comes from file.h */
     file_close(cur->executable);
   }
 
   lock_release(&file_system_lock);
   
-  /* 
-  Free all of the cild processes
-  in the list.
-  */
   remove_all_child_processes();
   
   if (is_thread_alive(cur->parent))
@@ -167,7 +155,6 @@ process_exit (void)
     sema_up(&cur->cp->exit_sema);
   }
 
-  // To here 
   
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -202,7 +189,7 @@ process_activate (void)
      interrupts. */
   tss_update ();
 }
-
+
 /* We load ELF binaries.  The following definitions are taken
    from the ELF specification, [ELF1], more-or-less verbatim.  */
 
@@ -390,7 +377,7 @@ load (const char *file_name, void (**eip) (void), void **esp, char **saveptr)
   /* file_close (file); Removing file close cause it never loads here*/
   return success;
 }
-
+
 /* load() helpers. */
 
 static bool install_page (void *upage, void *kpage, bool writable);
@@ -526,11 +513,6 @@ setup_stack (void **esp, char **saveptr, const char *filename)
     return success;
   }
 
-  /*
-  Here we are going to count the amount of args that are
-  sent and well resize to the necessary size depending on
-  the amount of args 
-  */
   for (token = (char*)filename; token != NULL; token = strtok_r(NULL, " ", saveptr)){
     cont[argc] = token;
     argc++;
@@ -541,23 +523,14 @@ setup_stack (void **esp, char **saveptr, const char *filename)
     }
   }
 
-  /*
-  Now were are going to copy the content
-  in cont to argv so we can minipulate the
-  args later.
-  */ 
   for (i = argc-1; i >= 0; i--){
     *esp -= strlen(cont[i])+1;
     byte_size += strlen(cont[i])+1;
     argv[i] = *esp;
     memcpy (*esp, cont[i], strlen(cont[i])+1);
   }
-  // add null 
   argv[argc] = 0;
   
-  /*
-    Here we will align the words by 4 bytes (word size)
-  */
   i = (size_t) *esp % 4;
   if (i){
     *esp -= i;
@@ -574,26 +547,42 @@ setup_stack (void **esp, char **saveptr, const char *filename)
   
   token = *esp;
 
-  // push argv
-  *esp -= sizeof (char**);
-  byte_size += sizeof (char**);
-  memcpy(*esp, &token, sizeof(char**));
+  operaciones('v',esp,byte_size,0,'a',token);
 
-  // push argc
-  *esp -= sizeof (int);
-  byte_size += sizeof (int);
-  memcpy(*esp, &argc, sizeof(int));
+  operaciones('c',esp,byte_size,argc,'b',0);
 
-  // push fake return address
-  *esp -= sizeof(void*);
-  byte_size += sizeof(void*);
-  memcpy(*esp, &argv[argc], sizeof (void*));
+  operaciones('a',esp,byte_size,0,argv,0);
 
-  // free argv and cont
   free(argv);
   free(cont);
 
   return success;
+}
+
+void operaciones(char opcionEjecutar,void **doblePunteroVoid,int byte_size,int argc,char** argv,char* token){
+  switch(opcionEjecutar){
+    //push
+    case 'v':
+      *doblePunteroVoid -= sizeof (int);
+      byte_size += sizeof (int);
+      memcpy(*doblePunteroVoid, &token, sizeof(int));
+    break;
+
+    case 'c':
+      *doblePunteroVoid-= sizeof (int);
+      byte_size += sizeof (int);
+      memcpy(*doblePunteroVoid, &argc, sizeof(int));
+    break;
+
+    case 'a':
+      *doblePunteroVoid -= sizeof(void*);
+      byte_size += sizeof(void*);
+      memcpy(*doblePunteroVoid, &argv[argc], sizeof (void*));
+    break;
+
+    default:
+    break;
+  }
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel

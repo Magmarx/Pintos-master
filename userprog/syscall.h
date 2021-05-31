@@ -5,16 +5,13 @@
 #include "threads/thread.h"
 void syscall_init (void);
 
-
-
-
 #define argumentoMaximo 3
 #define ERROR -1
 #define NOT_LOADED 0
 #define LOADED 1
 #define LOAD_FAIL 2
 #define CLOSE_ALL_FD -1
-#define USER_VADDR_BOTTOM ((void *) 0x08048000)
+#define DIRECCION ((void *) 0x08048000)
 
 struct process_file {
     struct file *file;
@@ -43,7 +40,6 @@ void remove_all_child_processes (void);
 
 void process_close_file (int file_descriptor);
 struct file* get_file(int filedes);
-
 int getpage_ptr (const void *vaddr);
 
-#endif /* userprog/syscall.h */
+#endif 
